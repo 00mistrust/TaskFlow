@@ -17,4 +17,4 @@ Salsabil
 Backend: Node.js & Express.js  
 Frontend: Vanilla JavaScript & Axios  
 Database: MongoDB (Containerized via Docker)  
-DevOps: Docker Compose
+DevOps: Docker Compos
