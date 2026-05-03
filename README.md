@@ -5,12 +5,14 @@ Marwane Taouil - Project Manager & Developer
 Marwa El Ouaai - Developer
 Lina ABAICH - Developer
 Salsabil ADIM- Developer
+Samir TOUIMI BENJELLOUN -Developee
 
  Feature Distribution
-Marwane
-Marwa
-Lina
-Salsabil
+Marwane:
+Marwa:
+Lina:
+Salsabil:
+Samir :
 
 
  Technical Stack
