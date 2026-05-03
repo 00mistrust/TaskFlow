@@ -18,3 +18,11 @@ const formul = new mongs.schema({
         unique: true
     }
 }, {timestamps: true})
+
+formul.pre("save", async (next) => {
+    if(!isModified("motDePasse")) return next()
+    this.motDePasse = await bcrypt.hash(this.motDePasse, 10)
+    next()
+})
+
+module.exports = mongs.model('User', formul)
