@@ -28,3 +28,12 @@ router.delete('/api/tasks/:id', async (req, res) => {
 });
 
 module.exports = router;
+// PATCH mettre à jour uniquement le statut
+router.patch('/api/tasks/:id/status', async (req, res) => {
+  const task = await Task.findByIdAndUpdate(
+    req.params.id,
+    { status: req.body.status },
+    { new: true }
+  );
+  res.json(task);
+});
