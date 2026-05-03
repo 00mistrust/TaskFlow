@@ -5,10 +5,8 @@ const taskRoutes = require('./routes/tasks');
 const app = express();
 app.use(express.json());
 
-mongoose.connect('mongodb://localhost:27017/taskflow', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('MongoDB connecté'))
+mongoose.connect('mongodb://localhost:27017/taskflow')
+.then(() => console.log('MongoDB connecté'))
   .catch(err => console.error(err));
 
 app.use(taskRoutes);
