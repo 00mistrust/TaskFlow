@@ -9,7 +9,7 @@ Samir TOUIMI BENJELLOUN -Developee
 
  Feature Distribution
 Marwane:
-Marwa:
+Marwa: F3 -gestion des taches et f6 -filtrage,recherche,pagination
 Lina:
 Salsabil:
 Samir :
