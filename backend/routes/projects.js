@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Project = require('../models/Project');
 
-// GET: جلب جميع المشاريع
+// GET all projects
 router.get('/', async (req, res) => {
     try {
         const projects = await Project.find();
@@ -12,12 +12,20 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST: إضافة مشروع جديد
+// CREATE project
 router.post('/', async (req, res) => {
     try {
-        const newProject = new Project(req.body);
+        const { title, description, deadline } = req.body;
+
+        const newProject = new Project({
+            title,
+            description,
+            deadline
+        });
+
         await newProject.save();
         res.status(201).json(newProject);
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
