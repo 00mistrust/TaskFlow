@@ -15,6 +15,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 app.use('/api/auth', authRoutes);
 
+app.get('/', (req, res) => res.json({ message: 'TaskFlow API ok' }));
+
 app.listen(process.env.PORT, () => {
   console.log(`Serveur lancé sur le port ${process.env.PORT}`);
 });
