@@ -1,16 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Task Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Gestionnaire de tâches</title>
 </head>
 <body>
-  <h2>Taches</h2>
- <form id="taskForm">
-  <input type="text" id="taskTitle" placeholder="Titre de la tâche" required>
-  <input type="text" id="taskPriority" placeholder="Priorité (Haute/Moyenne/Basse)" required>
-  <input type="text" id="taskStatus" placeholder="Statut (À faire/En cours/Terminée)" required>
-  <button type="submit">Ajouter</button>
-</form>
-  <button type="submit">Ajouter</button>
-</form>
+  <h2>Liste des tâches</h2>
+
+  <!-- Formulaire -->
+  <form id="taskForm">
+    <input type="text" id="taskTitle" placeholder="Titre de la tâche" required>
+    <input type="text" id="taskPriority" placeholder="Priorité (Haute/Moyenne/Basse)" required>
+    <input type="text" id="taskStatus" placeholder="Statut (À faire/En cours/Terminée)" required>
+    <button type="submit">Ajouter</button>
+  </form>
+
+  <!-- Liste affichée -->
+  <ul id="taskList"></ul>
+
+  <script>
+    const form = document.getElementById('taskForm');
+    const list = document.getElementById('taskList');
+
+    // Charger les tâches existantes au démarrage
+    async function loadTasks() {
+      const response = await fetch('http://localhost:3000/api/tasks');
+      const tasks = await response.json();
+      list.innerHTML = "";
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.textContent = `${task.title} | Priorité: ${task.priority} | Statut: ${task.status}`;
+        list.appendChild(li);
+      });
+    }
+
+    // Ajouter une nouvelle tâche
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const title = document.getElementById('taskTitle').value;
+      const priority = document.getElementById('taskPriority').value;
+      const status = document.getElementById('taskStatus').value;
+
+      const response = await fetch('http://localhost:3000/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          priority,
+          status,
+          projectId: "507f1f77bcf86cd799439011" // ObjectId factice pour tester
+        })
+      });
+
+      const data = await response.json();
+
+      const li = document.createElement('li');
+      li.textContent = `${data.title} | Priorité: ${data.priority} | Statut: ${data.status}`;
+      list.appendChild(li);
+
+      form.reset();
+    });
+
+    // Charger les tâches dès l'ouverture de la page
+    loadTasks();
+  </script>
+</body>
+</html>
