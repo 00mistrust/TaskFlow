@@ -3,31 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
   <title>Gestionnaire de tâches</title>
 </head>
 <body>
   <h2>Liste des tâches</h2>
 
-  <!-- Formulaire -->
   <form id="taskForm">
     <input type="text" id="taskTitle" placeholder="Titre de la tâche" required>
-    <input type="text" id="taskPriority" placeholder="Priorité (Haute/Moyenne/Basse)" required>
-    <input type="text" id="taskStatus" placeholder="Statut (À faire/En cours/Terminée)" required>
+    
+    <select id="taskPriority" required>
+      <option value="">-- Priorité --</option>
+      <option value="basse">Basse</option>
+      <option value="moyenne">Moyenne</option>
+      <option value="haute">Haute</option>
+    </select>
+
+    <select id="taskStatus" required>
+      <option value="">-- Statut --</option>
+      <option value="à faire">À faire</option>
+      <option value="en cours">En cours</option>
+      <option value="terminé">Terminé</option>
+    </select>
+
     <button type="submit">Ajouter</button>
   </form>
 
-  <!-- Liste affichée -->
   <ul id="taskList"></ul>
 
   <script>
-    const form = document.getElementById('taskForm');
-    const list = document.getElementById('taskList');
+    const BASE_URL = 'http://localhost:3000/api/tasks';
+    const PROJECT_ID = "507f1f77bcf86cd799439011"; // remplacer plus tard
 
-    // Charger les tâches existantes au démarrage
     async function loadTasks() {
-      const response = await fetch('http://localhost:3000/api/tasks');
-      const tasks = await response.json();
+      try {
+        const response = await fetch(BASE_URL);
+        const tasks = await response.json();
+        renderTasks(tasks);
+      } catch (err) {
+        console.error('Erreur chargement:', err);
+      }
+    }
+
+    function renderTasks(tasks) {
+      const list = document.getElementById('taskList');
       list.innerHTML = "";
       tasks.forEach(task => {
         const li = document.createElement('li');
@@ -36,34 +54,33 @@
       });
     }
 
-    // Ajouter une nouvelle tâche
-    form.addEventListener('submit', async function(e) {
+    document.getElementById('taskForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+
       const title = document.getElementById('taskTitle').value;
       const priority = document.getElementById('taskPriority').value;
       const status = document.getElementById('taskStatus').value;
 
-      const response = await fetch('http://localhost:3000/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          priority,
-          status,
-          projectId: "507f1f77bcf86cd799439011" // ObjectId factice pour tester
-        })
-      });
+      try {
+        const response = await fetch(BASE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, priority, status, project: PROJECT_ID })
+        });
 
-      const data = await response.json();
+        if (!response.ok) {
+          const err = await response.json();
+          alert('Erreur: ' + err.error);
+          return;
+        }
 
-      const li = document.createElement('li');
-      li.textContent = `${data.title} | Priorité: ${data.priority} | Statut: ${data.status}`;
-      list.appendChild(li);
-
-      form.reset();
+        await loadTasks(); // recharge toute la liste proprement
+        this.reset();
+      } catch (err) {
+        console.error('Erreur ajout:', err);
+      }
     });
 
-    // Charger les tâches dès l'ouverture de la page
     loadTasks();
   </script>
 </body>
