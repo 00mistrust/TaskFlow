@@ -1,27 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
+const auth = require('../middleware/auth');
 
 // GET toutes les tâches d'un projet AVEC filtrage, recherche et pagination (F6)
-router.get('/project/:id', async (req, res) => {
+router.get('/project/:id', auth, async (req, res) => {
   try {
     const { status, priority, assignedTo, search, page = 1, limit = 10 } = req.query;
 
-    // Filtre de base : le projet
     const filter = { project: req.params.id };
 
-    // Ajout conditionnel des filtres
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
     if (assignedTo) filter.assignedTo = assignedTo;
     if (search) filter.title = { $regex: search, $options: 'i' };
 
-    // Pagination
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    // Exécution de la requête
     const total = await Task.countDocuments(filter);
     const tasks = await Task.find(filter)
       .skip(skip)
@@ -39,8 +36,8 @@ router.get('/project/:id', async (req, res) => {
   }
 });
 
-// GET toutes les tâches (pour test) AVEC filtrage et pagination
-router.get('/', async (req, res) => {
+// GET toutes les tâches AVEC filtrage et pagination
+router.get('/', auth, async (req, res) => {
   try {
     const { status, priority, search, page = 1, limit = 10 } = req.query;
 
@@ -72,7 +69,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST créer une tâche
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
     const task = new Task(req.body);
     await task.save();
@@ -83,7 +80,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT modifier une tâche
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const task = await Task.findByIdAndUpdate(
       req.params.id, 
@@ -98,7 +95,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // PATCH mettre à jour uniquement le statut
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', auth, async (req, res) => {
   try {
     const task = await Task.findByIdAndUpdate(
       req.params.id,
@@ -113,7 +110,7 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 // DELETE supprimer une tâche
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     await Task.findByIdAndDelete(req.params.id);
     res.json({ message: 'Tâche supprimée' });
