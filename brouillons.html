@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F7 - Brouillons</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        h2 {
+            color: #7dd3fc;
+            margin-top: 0;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #e2e8f0;
+            box-sizing: border-box;
+        }
+        label {
+            display: block;
+            margin-top: 1rem;
+            color: #94a3b8;
+        }
+        #draft-banner {
+            background: #1d4ed8;
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        #draft-banner button {
+            background: white;
+            color: #1d4ed8;
+            border: none;
+            border-radius: 6px;
+            padding: 0.3rem 0.7rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+        #saved-indicator {
+            font-size: 0.78rem;
+            color: #4ade80;
+            min-height: 1rem;
+            margin-top: 0.4rem;
+        }
+        #btn-submit {
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.65rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <h2>📝 Nouvelle tâche</h2>
+
+        <div id="draft-banner">
+            <span>💾 Brouillon détecté — Restaurer ?</span>
+            <div>
+                <button id="btn-restore">Restaurer</button>
+                <button id="btn-discard">Ignorer</button>
+            </div>
+        </div>
+
+        <form id="task-form">
+
+            <label>Titre de la tâche</label>
+            <input type="text" id="titre" placeholder="Ex: Créer la page login" />
+
+            <label>Description</label>
+            <textarea id="description" rows="3" placeholder="Décrivez la tâche..."></textarea>
+
+            <label for="priorite">Priorité</label>
+            <select id="priorite" aria-label="Priorité">
+                <option value="">-- Choisir --</option>
+                <option value="basse">Basse</option>
+                <option value="moyenne">Moyenne</option>
+                <option value="haute">Haute</option>
+            </select>
+
+            <div id="saved-indicator"></div>
+
+            <button type="submit" id="btn-submit">✅ Créer la tâche</button>
+
+        </form>
+    </div>
+
+    <script>
+        const titreInput   = document.getElementById("titre");
+        const descInput    = document.getElementById("description");
+        const prioriteSelect = document.getElementById("priorite");
+        const savedIndicator = document.getElementById("saved-indicator");
+        const draftBanner  = document.getElementById("draft-banner");
+        const btnRestore   = document.getElementById("btn-restore");
+        const btnDiscard   = document.getElementById("btn-discard");
+        const taskForm     = document.getElementById("task-form");
+
+        const DRAFT_KEY = "draft_42";
+
+        // Sauvegarder le brouillon à chaque saisie
+        function saveDraft() {
+            const draft = {
+                titre: titreInput.value,
+                description: descInput.value,
+                priorite: prioriteSelect.value
+            };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+            savedIndicator.textContent = "💾 Brouillon sauvegardé automatiquement";
+            setTimeout(() => { savedIndicator.textContent = ""; }, 2000);
+        }
+
+        titreInput.addEventListener("input", saveDraft);
+        descInput.addEventListener("input", saveDraft);
+        prioriteSelect.addEventListener("change", saveDraft);
+
+        // Au chargement : détecter un brouillon
+        window.addEventListener("DOMContentLoaded", () => {
+            const savedDraft = localStorage.getItem(DRAFT_KEY);
+            if (savedDraft) {
+                draftBanner.style.display = "flex";
+            }
+        });
+
+        // Bouton Restaurer
+        btnRestore.addEventListener("click", () => {
+            const savedDraft = localStorage.getItem(DRAFT_KEY);
+            if (savedDraft) {
+                const draft = JSON.parse(savedDraft);
+                titreInput.value      = draft.titre       || "";
+                descInput.value       = draft.description || "";
+                prioriteSelect.value  = draft.priorite    || "";
+            }
+            draftBanner.style.display = "none";
+        });
+
+        // Bouton Ignorer
+        btnDiscard.addEventListener("click", () => {
+            localStorage.removeItem(DRAFT_KEY);
+            draftBanner.style.display = "none";
+        });
+
+        // Soumission du formulaire
+        taskForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            console.log("Tâche créée !");
+            localStorage.removeItem(DRAFT_KEY);
+            taskForm.reset();
+            savedIndicator.textContent = "";
+        });
+    </script>
+</body>
+</html>
