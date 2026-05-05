@@ -5,7 +5,8 @@ const bcrypt = require('bcryptjs');
 exports.register = async (req, res) => {
   try {
     const { nom, email, motDePasse } = req.body;
-    const user = await User.create({ nom, email, motDePasse });
+    const hashed = await bcrypt.hash(motDePasse, 10);
+    const user = await User.create({ nom, email, motDePasse: hashed });
     res.status(201).json({ message: 'Compte créé avec succès' });
   } catch (err) {
     res.status(400).json({ error: err.message });
