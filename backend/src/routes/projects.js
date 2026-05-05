@@ -6,7 +6,7 @@ const authMiddleware = require('../middleware/auth'); // تأكد من المس�
 
 router.use(authMiddleware);
 
-
+//GET: جلب المشاريع ديال المستخدم مع Pagination
 router.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
