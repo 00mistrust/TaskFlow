@@ -8,37 +8,80 @@
 <body>
   <h2>Liste des tâches</h2>
 
+  <!-- Formulaire ajout -->
   <form id="taskForm">
     <input type="text" id="taskTitle" placeholder="Titre de la tâche" required>
-    
     <select id="taskPriority" required>
       <option value="">-- Priorité --</option>
       <option value="basse">Basse</option>
       <option value="moyenne">Moyenne</option>
       <option value="haute">Haute</option>
     </select>
-
     <select id="taskStatus" required>
       <option value="">-- Statut --</option>
       <option value="à faire">À faire</option>
       <option value="en cours">En cours</option>
       <option value="terminé">Terminé</option>
     </select>
-
     <button type="submit">Ajouter</button>
   </form>
 
+  <hr>
+
+  <!-- Filtres F6 -->
+  <h3>Filtrer les tâches</h3>
+  <input type="text" id="searchInput" placeholder="Rechercher par mot-clé...">
+
+  <select id="filterStatus">
+    <option value="">-- Tous les statuts --</option>
+    <option value="à faire">À faire</option>
+    <option value="en cours">En cours</option>
+    <option value="terminé">Terminé</option>
+  </select>
+
+  <select id="filterPriority">
+    <option value="">-- Toutes les priorités --</option>
+    <option value="basse">Basse</option>
+    <option value="moyenne">Moyenne</option>
+    <option value="haute">Haute</option>
+  </select>
+
+  <button onclick="applyFilters()">Filtrer</button>
+  <button onclick="resetFilters()">Réinitialiser</button>
+
+  <!-- Liste -->
   <ul id="taskList"></ul>
+
+  <!-- Pagination -->
+  <div id="pagination"></div>
 
   <script>
     const BASE_URL = 'http://localhost:3000/api/tasks';
-    const PROJECT_ID = "507f1f77bcf86cd799439011"; // remplacer plus tard
+    const PROJECT_ID = "507f1f77bcf86cd799439011";
+    let currentPage = 1;
 
-    async function loadTasks() {
+    // Charge les tâches avec filtres et pagination
+    async function loadTasks(page = 1) {
       try {
-        const response = await fetch(BASE_URL);
-        const tasks = await response.json();
-        renderTasks(tasks);
+        const search = document.getElementById('searchInput').value;
+        const status = document.getElementById('filterStatus').value;
+        const priority = document.getElementById('filterPriority').value;
+
+        // Construire les query params
+        const params = new URLSearchParams();
+        params.append('page', page);
+        params.append('limit', 5);
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (priority) params.append('priority', priority);
+
+        const response = await fetch(`${BASE_URL}?${params.toString()}`);
+        const result = await response.json();
+
+        renderTasks(result.data);
+        renderPagination(result.page, result.totalPages);
+        currentPage = result.page;
+
       } catch (err) {
         console.error('Erreur chargement:', err);
       }
@@ -47,6 +90,10 @@
     function renderTasks(tasks) {
       const list = document.getElementById('taskList');
       list.innerHTML = "";
+      if (tasks.length === 0) {
+        list.innerHTML = "<li>Aucune tâche trouvée.</li>";
+        return;
+      }
       tasks.forEach(task => {
         const li = document.createElement('li');
         li.textContent = `${task.title} | Priorité: ${task.priority} | Statut: ${task.status}`;
@@ -54,9 +101,44 @@
       });
     }
 
+    function renderPagination(page, totalPages) {
+      const div = document.getElementById('pagination');
+      div.innerHTML = "";
+      if (totalPages <= 1) return;
+
+      if (page > 1) {
+        const prev = document.createElement('button');
+        prev.textContent = '← Précédent';
+        prev.onclick = () => loadTasks(page - 1);
+        div.appendChild(prev);
+      }
+
+      const info = document.createElement('span');
+      info.textContent = ` Page ${page} / ${totalPages} `;
+      div.appendChild(info);
+
+      if (page < totalPages) {
+        const next = document.createElement('button');
+        next.textContent = 'Suivant →';
+        next.onclick = () => loadTasks(page + 1);
+        div.appendChild(next);
+      }
+    }
+
+    function applyFilters() {
+      loadTasks(1);
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterStatus').value = '';
+      document.getElementById('filterPriority').value = '';
+      loadTasks(1);
+    }
+
+    // Ajouter une tâche
     document.getElementById('taskForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-
       const title = document.getElementById('taskTitle').value;
       const priority = document.getElementById('taskPriority').value;
       const status = document.getElementById('taskStatus').value;
@@ -74,7 +156,7 @@
           return;
         }
 
-        await loadTasks(); // recharge toute la liste proprement
+        await loadTasks(currentPage);
         this.reset();
       } catch (err) {
         console.error('Erreur ajout:', err);
