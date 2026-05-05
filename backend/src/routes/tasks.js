@@ -2,22 +2,70 @@ const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
 
-// GET toutes les tâches d'un projet
-// /api/tasks/project/:id
+// GET toutes les tâches d'un projet AVEC filtrage, recherche et pagination (F6)
 router.get('/project/:id', async (req, res) => {
   try {
-    const tasks = await Task.find({ project: req.params.id });
-    res.json(tasks);
+    const { status, priority, assignedTo, search, page = 1, limit = 10 } = req.query;
+
+    // Filtre de base : le projet
+    const filter = { project: req.params.id };
+
+    // Ajout conditionnel des filtres
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (assignedTo) filter.assignedTo = assignedTo;
+    if (search) filter.title = { $regex: search, $options: 'i' };
+
+    // Pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Exécution de la requête
+    const total = await Task.countDocuments(filter);
+    const tasks = await Task.find(filter)
+      .skip(skip)
+      .limit(limitNum);
+
+    res.json({
+      data: tasks,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET toutes les tâches (pour test)
+// GET toutes les tâches (pour test) AVEC filtrage et pagination
 router.get('/', async (req, res) => {
   try {
-    const tasks = await Task.find();
-    res.json(tasks);
+    const { status, priority, search, page = 1, limit = 10 } = req.query;
+
+    const filter = {};
+
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (search) filter.title = { $regex: search, $options: 'i' };
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const total = await Task.countDocuments(filter);
+    const tasks = await Task.find(filter)
+      .skip(skip)
+      .limit(limitNum);
+
+    res.json({
+      data: tasks,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
