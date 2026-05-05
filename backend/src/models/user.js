@@ -18,9 +18,13 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('motDePasse')) return next();
-  this.motDePasse = await bcrypt.hash(this.motDePasse, 10);
-  next();
+  try {
+    if (!this.isModified('motDePasse')) return next();
+    this.motDePasse = await bcrypt.hash(this.motDePasse, 10);
+    return next();
+  } catch(err) {
+    return next(err);
+  }
 });
 
 module.exports = mongoose.model('User', userSchema);
