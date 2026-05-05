@@ -14,6 +14,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error(err));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/tasks', require('./src/routes/tasks'));
 
 app.get('/', (req, res) => res.json({ message: 'amma Nice Job Team time to show up !' }));
 
