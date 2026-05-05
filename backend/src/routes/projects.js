@@ -74,4 +74,27 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// POST: إضافة عضو للمشروع
+router.post('/:id/members', async (req, res) => {
+    try {
+        const { userId } = req.body; // الـ ID ديال الشخص اللي باغة تزيديه
+        const project = await Project.findById(req.params.id);
+
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+        
+        // التحقق: واش الشخص ديجا كاين؟
+        if (project.members.includes(userId)) {
+            return res.status(400).json({ error: 'User is already a member' });
+        }
+
+        // إضافة العضو
+        project.members.push(userId);
+        await project.save();
+
+        res.json({ message: 'Member added successfully', project });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
