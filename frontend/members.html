@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Project Members</title>
+    <style>
+        .container { max-width: 600px; margin: 50px auto; padding: 20px; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 10px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Project Members</h2>
+
+    <div>
+        <input type="email" id="emailInput" placeholder="Member Email">
+        <button onclick="handleInvite()">Invite</button>
+    </div>
+
+    <ul id="membersList">
+        </ul>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="js/members.js"></script>
+
+<script>
+    // هادي غير ديمو، خاصك تجيبيه dynamic من الـ URL أو الـ State ديالك
+    const projectId = "ID_DIAL_PROJECT_LI_KHAS_YKOUN_HNA"; 
+
+    function handleInvite() {
+        const email = document.getElementById('emailInput').value;
+        inviteMember(projectId, email);
+    }
+</script>
+
+</body>
+</html>
