@@ -18,10 +18,10 @@ form.addEventListener('submit', async (e) => {
     });
 
     if (response.ok) {
-        alert('Projet ajouté بنجاح!');
-        loadProjects();
+        alert('Project added successfully!');
+        loadProjects(); // كنعاودو نليستيو المشاريع باش يبان الجديد
     } else {
-        alert('وقع خطأ، عاودي جربي');
+        alert('An error occurred, please try again.');
     }
 });
 
@@ -29,6 +29,8 @@ form.addEventListener('submit', async (e) => {
 async function loadProjects() {
     const res = await fetch('/api/projects');
     const projects = await res.json();
+    
+    // كنعرضوهم فـ الـ div ديال container
     container.innerHTML = projects.map(p => `
         <div class="card p-2 mb-2">
             <strong>${p.title}</strong>
@@ -37,4 +39,4 @@ async function loadProjects() {
     `).join('');
 }
 
-loadProjects();
+loadProjects(); // كنعيطو لهاد الدالة غير تحل الصفحة
