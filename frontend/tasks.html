@@ -261,43 +261,46 @@
     }
 
     function renderTasks(tasks) {
-      const list = document.getElementById('taskList');
-      if (!tasks || tasks.length === 0) {
-        list.innerHTML = `
-          <div class="empty-state col-12">
-            <i class="bi bi-inbox fs-1 mb-3 d-block"></i>
-            <p>Aucune tâche trouvée.</p>
-          </div>`;
-        return;
-      }
-      list.innerHTML = tasks.map(task => {
-        const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
-        const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
-        return `
-          <div class="col-md-6 col-lg-4">
-            <div class="card task-card shadow-sm h-100">
-              <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                  <h6 class="card-title fw-semibold mb-0" style="color: #1f2937;">${task.title}</h6>
-                  <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
-                </div>
-                <span class="badge ${statusClass} text-white mb-3">${task.status}</span>
-                <div class="d-flex gap-2 mt-3">
-                  <select class="form-select form-select-sm" onchange="updateStatus('${task._id}', this.value)">
-                    <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
-                    <option value="en cours" ${task.status === 'en cours' ? 'selected' : ''}>En cours</option>
-                    <option value="terminé" ${task.status === 'terminé' ? 'selected' : ''}>Terminé</option>
-                  </select>
-                  <button class="btn btn-outline-danger btn-sm" onclick="deleteTask('${task._id}')">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>`;
-      }).join('');
-    }
+  const list = document.getElementById('taskList');
+  if (!tasks || tasks.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state col-12">
+        <i class="bi bi-inbox fs-1 mb-3 d-block"></i>
+        <p>Aucune tâche trouvée.</p>
+      </div>`;
+    return;
+  }
+  list.innerHTML = tasks.map(task => {
+    const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
+    const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
+    
+    // Safety check for description
+    const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
 
+    return `
+      <div class="col-md-6 col-lg-4">
+        <div class="card task-card shadow-sm h-100">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
+              <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
+            </div>
+            ${descriptionText} <span class="badge ${statusClass} text-white mb-3">${task.status}</span>
+            <div class="d-flex gap-2 mt-auto">
+              <select class="form-select form-select-sm" onchange="updateStatus('${task._id}', this.value)">
+                <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
+                <option value="en cours" ${task.status === 'en cours' ? 'selected' : ''}>En cours</option>
+                <option value="terminé" ${task.status === 'terminé' ? 'selected' : ''}>Terminé</option>
+              </select>
+              <button class="btn btn-outline-danger btn-sm" onclick="deleteTask('${task._id}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
     function renderPagination(page, totalPages) {
       const div = document.getElementById('pagination');
       if (totalPages <= 1) { div.innerHTML = ''; return; }

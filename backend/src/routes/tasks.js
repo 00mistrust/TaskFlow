@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Task = require('../models/Task');
+const Task = require('../models/task');
 const auth = require('../middleware/auth');
 
 // GET toutes les tâches d'un projet AVEC filtrage, recherche et pagination (F6)
@@ -48,7 +48,12 @@ router.get('/', auth, async (req, res) => {
 
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
-    if (search) filter.title = { $regex: search, $options: 'i' };
+    if (search) {
+  filter.$or = [
+    { title: { $regex: search, $options: 'i' } },
+    { description: { $regex: search, $options: 'i' } }
+  ];
+}
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
