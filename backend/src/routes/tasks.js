@@ -13,7 +13,10 @@ router.get('/project/:id', auth, async (req, res) => {
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
     if (assignedTo) filter.assignedTo = assignedTo;
-    if (search) filter.title = { $regex: search, $options: 'i' };
+    if (search) filter.$or = [
+  { title: { $regex: search, $options: 'i' } },
+  { description: { $regex: search, $options: 'i' } }
+];
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
