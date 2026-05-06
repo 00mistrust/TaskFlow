@@ -1,0 +1,40 @@
+body {
+  background-color: #f0f2f5;
+}
+
+
+.card {
+  border-radius: 12px;
+  border: none;
+}
+
+.btn-primary {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.btn-primary:hover {
+  background-color: #3c3489;
+  border-color: #3c3489;
+}
+
+a {
+  color: #4f46e5 !important;
+}
+
+h1 {
+  color: #3c3489;
+}
+
+.navbar .nav-link {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.navbar .nav-link:hover {
+  color: white !important;
+}
+
+.navbar .nav-link.active {
+  color: white !important;
+  font-weight: 500;
+}
