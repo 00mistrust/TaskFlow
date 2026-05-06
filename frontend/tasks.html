@@ -365,39 +365,51 @@
       loadTasks(1);
     }
     // F7: SAUVEGARDE AUTOMATIQUE DES BROUILLONS
-const DRAFT_KEY = 'draft_' + (PROJECT_ID || 'default');
+// F7: SAUVEGARDE AUTOMATIQUE DES BROUILLONS
+    const DRAFT_KEY = 'draft_' + (PROJECT_ID || 'default');
 
-['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
-  document.getElementById(id).addEventListener('input', () => {
-    const draft = {
-      title: document.getElementById('taskTitle').value,
-      priority: document.getElementById('taskPriority').value,
-      status: document.getElementById('taskStatus').value
-    };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  });
-  document.getElementById('addTaskModal').addEventListener('show.bs.modal', () => {
-          if (saved && confirm('💾 Brouillon détecté — Voulez-vous le restaurer ?')) {
+    // 1. Listen for inputs to save draft
+    ['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        const draft = {
+          title: document.getElementById('taskTitle').value,
+          priority: document.getElementById('taskPriority').value,
+          status: document.getElementById('taskStatus').value
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      });
+    }); // Added missing closing brace/paren for forEach
+
+    // 2. Restore draft when modal opens
+    document.getElementById('addTaskModal').addEventListener('show.bs.modal', () => {
+      const saved = localStorage.getItem(DRAFT_KEY); // Define 'saved' here
+      if (saved) {
         const draft = JSON.parse(saved);
-        document.getElementById('taskTitle').value    = draft.title    || '';
-        document.getElementById('taskPriority').value = draft.priority || '';
-        document.getElementById('taskStatus').value   = draft.status   || '';
+        // Only confirm if there's actually content in the draft
+        if ((draft.title || draft.priority || draft.status) && confirm('💾 Brouillon détecté — Voulez-vous le restaurer ?')) {
+          document.getElementById('taskTitle').value = draft.title || '';
+          document.getElementById('taskPriority').value = draft.priority || '';
+          document.getElementById('taskStatus').value = draft.status || '';
+        }
       }
     });
-        async function pollNotifications() {
+
+    async function pollNotifications() {
       try {
         const res = await axios.get('http://localhost:5000/api/notifications', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const unread = res.data.filter(n => !n.read).length;
         document.getElementById('notifBadge').textContent = unread;
-        //Archiver les notifications lues dans localStorage
+        
         const read = res.data.filter(n => n.read);
         localStorage.setItem('notifications_archived', JSON.stringify(read));
       } catch (err) {
         console.log('Notifications non disponibles');
       }
     }
+
+    // Initialize
     pollNotifications();
     setInterval(pollNotifications, 30000);
     loadTasks();
