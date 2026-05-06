@@ -14,7 +14,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error(err));
 
 app.use('/api/auth', authRoutes);
-// app.use('/api/tasks', require('./src/routes/tasks'));
+app.use('/api/tasks', require('./src/routes/tasks'));
 app.use('/api/dashboard', require('./src/routes/dashboard'));
 app.get('/', (req, res) => res.json({ message: 'Nice Job Team, pround of you ALL, now time to show up !' }));
 // const projectRoutes = require('./backend/src/routes/projects'); membre 2
