@@ -133,6 +133,12 @@
           </select>
         </div>
         <div class="col-md-2">
+          <label class="form-label text-muted small fw-semibold">MEMBRE</label>
+          <select class="form-select" id="filterMember">
+            <option value="">Tous</option>
+          </select>
+        </div>
+        <div class="col-md-2">
           <button class="btn btn-primary w-100" onclick="applyFilters()">
             <i class="bi bi-funnel me-1"></i>Filtrer
           </button>
@@ -286,7 +292,8 @@
         if (search) query.append('search', search);
         if (status) query.append('status', status);
         if (priority) query.append('priority', priority);
-
+        const member = document.getElementById('filterMember').value;
+        if (member) query.append('assignedTo', member);
         const url = PROJECT_ID
           ? `${BASE_URL}/project/${PROJECT_ID}?${query}`
           : `${BASE_URL}?${query}`;
@@ -455,15 +462,36 @@
       } catch (err) { alert('Erreur lors de la suppression.'); }
     }
 
-    function applyFilters() { loadTasks(1); }
-    function resetFilters() {
-      document.getElementById('searchInput').value = '';
-      document.getElementById('filterStatus').value = '';
-      document.getElementById('filterPriority').value = '';
-      loadTasks(1);
-    }
+function applyFilters() { loadTasks(1); }
+function resetFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterPriority').value = '';
+  document.getElementById('filterMember').value = '';
+  loadTasks(1);
+}
 
-    loadTasks();
+async function loadMembers() {
+  if (!PROJECT_ID) return;
+  try {
+    const res = await axios.get(`http://localhost:5000/api/projects/${PROJECT_ID}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const select = document.getElementById('filterMember');
+    const members = res.data.members || [];
+    members.forEach(member => {
+      const option = document.createElement('option');
+      option.value = member._id;
+      option.textContent = member.name || member.email;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.log('Membres non disponibles pour linstant');
+  }
+}
+
+loadMembers();
+loadTasks();
   </script>
 </body>
 </html>
