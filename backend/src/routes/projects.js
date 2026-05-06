@@ -63,22 +63,24 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// DELETE: مسح مشروع
-router.delete('/:id', async (req, res) => {
+router.delete('/:id/members/:userId', async (req, res) => {
     try {
-        // 1. قلبي على المشروع أولاً
-        const project = await Project.findOne({ _id: req.params.id, owner: req.user.id });
-        
-        if (!project) return res.status(404).json({ error: 'Project non trouvé' });
+        const project = await Project.findById(req.params.id);
+        if (!project) return res.status(404).json({ error: 'Project not found' });
 
-        // 2. دابا استعملي deleteOne باش يخدم الـ Middleware (Cascade Delete)
-        await project.deleteOne(); 
+        // التحقق من الملكية (Restriction)
+        if (project.owner.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Only the owner can modify project members' });
+        }
 
-        res.json({ message: 'Projet et ses tâches supprimés avec succès' });
+        // كنفلترو لاليست ونحيدو العضو المطلوب
+        project.members = project.members.filter(m => m.toString() !== req.params.userId);
+        await project.save();
+
+        res.json({ message: 'Member removed successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-
 });
 
 // POST: إضافة عضو للمشروع
@@ -89,7 +91,7 @@ router.post('/:id/members', async (req, res) => {
 
         if (!project) return res.status(404).json({ error: 'Project not found' });
 
-        
+
         if (project.owner.toString() !== req.user.id) {
             return res.status(403).json({ error: 'Seul le propriétaire peut modifier les membres' });
         }
