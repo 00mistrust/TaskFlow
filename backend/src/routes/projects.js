@@ -88,6 +88,11 @@ router.post('/:id/members', async (req, res) => {
         const project = await Project.findById(req.params.id);
 
         if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        
+        if (project.owner.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Seul le propriétaire peut modifier les membres' });
+        }
         
         // التحقق: واش الشخص ديجا كاين؟
         if (project.members.includes(userId)) {
