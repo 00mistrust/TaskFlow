@@ -331,6 +331,7 @@
         document.getElementById('taskPriority').value = '';
         document.getElementById('taskStatus').value = '';
         loadTasks(currentPage);
+        localStorage.removeItem(DRAFT_KEY);
       } catch (err) {
         errorDiv.textContent = err.response?.data?.error || 'Erreur lors de l\'ajout.';
         errorDiv.classList.remove('d-none');
@@ -363,7 +364,42 @@
       document.getElementById('filterPriority').value = '';
       loadTasks(1);
     }
+    // F7: SAUVEGARDE AUTOMATIQUE DES BROUILLONS
+const DRAFT_KEY = 'draft_' + (PROJECT_ID || 'default');
 
+['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    const draft = {
+      title: document.getElementById('taskTitle').value,
+      priority: document.getElementById('taskPriority').value,
+      status: document.getElementById('taskStatus').value
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  });
+  document.getElementById('addTaskModal').addEventListener('show.bs.modal', () => {
+          if (saved && confirm('💾 Brouillon détecté — Voulez-vous le restaurer ?')) {
+        const draft = JSON.parse(saved);
+        document.getElementById('taskTitle').value    = draft.title    || '';
+        document.getElementById('taskPriority').value = draft.priority || '';
+        document.getElementById('taskStatus').value   = draft.status   || '';
+      }
+    });
+        async function pollNotifications() {
+      try {
+        const res = await axios.get('http://localhost:5000/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const unread = res.data.filter(n => !n.read).length;
+        document.getElementById('notifBadge').textContent = unread;
+        //Archiver les notifications lues dans localStorage
+        const read = res.data.filter(n => n.read);
+        localStorage.setItem('notifications_archived', JSON.stringify(read));
+      } catch (err) {
+        console.log('Notifications non disponibles');
+      }
+    }
+    pollNotifications();
+    setInterval(pollNotifications, 30000);
     loadTasks();
   </script>
 </body>
