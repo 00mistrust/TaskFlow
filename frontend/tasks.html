@@ -172,6 +172,10 @@
             <input type="text" class="form-control" id="taskTitle" placeholder="Ex: Créer la page d'accueil">
           </div>
           <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="taskDescription" rows="2" placeholder="Description optionnelle..."></textarea>
+          </div>
+          <div class="mb-3">
             <label class="form-label fw-semibold">Priorité <span class="text-danger">*</span></label>
             <select class="form-select" id="taskPriority">
               <option value="">-- Choisir --</option>
@@ -311,6 +315,7 @@
       const title = document.getElementById('taskTitle').value.trim();
       const priority = document.getElementById('taskPriority').value;
       const status = document.getElementById('taskStatus').value;
+      const description = document.getElementById('taskDescription').value;
       const errorDiv = document.getElementById('formError');
 
       if (!title || !priority || !status) {
@@ -321,8 +326,8 @@
       errorDiv.classList.add('d-none');
 
       try {
-        await axios.post(BASE_URL, {
-          title, priority, status,
+      await axios.post(BASE_URL, {
+      title, description, priority, status,
           project: PROJECT_ID || '507f1f77bcf86cd799439011'
         }, { headers: { Authorization: `Bearer ${token}` } });
 
