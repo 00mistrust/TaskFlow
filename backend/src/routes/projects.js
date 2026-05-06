@@ -66,12 +66,19 @@ router.put('/:id', async (req, res) => {
 // DELETE: مسح مشروع
 router.delete('/:id', async (req, res) => {
     try {
-        const project = await Project.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
+        // 1. قلبي على المشروع أولاً
+        const project = await Project.findOne({ _id: req.params.id, owner: req.user.id });
+        
         if (!project) return res.status(404).json({ error: 'Project non trouvé' });
-        res.json({ message: 'Projet supprimé' });
+
+        // 2. دابا استعملي deleteOne باش يخدم الـ Middleware (Cascade Delete)
+        await project.deleteOne(); 
+
+        res.json({ message: 'Projet et ses tâches supprimés avec succès' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+
 });
 
 // POST: إضافة عضو للمشروع
