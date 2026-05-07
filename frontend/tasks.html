@@ -105,7 +105,7 @@
 
     <div class="filter-section mb-4">
       <div class="row g-3 align-items-end">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label text-muted small fw-semibold">RECHERCHER</label>
           <div class="input-group">
             <span class="input-group-text bg-white border-end-0">
@@ -138,7 +138,7 @@
             <option value="">Tous</option>
           </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-1">
           <button class="btn btn-primary w-100" onclick="applyFilters()">
             <i class="bi bi-funnel me-1"></i>Filtrer
           </button>
@@ -280,11 +280,14 @@
     const params = new URLSearchParams(window.location.search);
     const PROJECT_ID = params.get('id') || null;
 
+    const DRAFT_KEY = 'draft_' + (PROJECT_ID || 'default');
+
     async function loadTasks(page = 1) {
       try {
         const search = document.getElementById('searchInput').value;
         const status = document.getElementById('filterStatus').value;
         const priority = document.getElementById('filterPriority').value;
+        const member = document.getElementById('filterMember').value;
 
         const query = new URLSearchParams();
         query.append('page', page);
@@ -292,8 +295,8 @@
         if (search) query.append('search', search);
         if (status) query.append('status', status);
         if (priority) query.append('priority', priority);
-        const member = document.getElementById('filterMember').value;
         if (member) query.append('assignedTo', member);
+
         const url = PROJECT_ID
           ? `${BASE_URL}/project/${PROJECT_ID}?${query}`
           : `${BASE_URL}?${query}`;
@@ -330,7 +333,6 @@
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
         const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-
         return `
           <div class="col-md-6 col-lg-4">
             <div class="card task-card shadow-sm h-100">
@@ -398,6 +400,7 @@
         document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
         document.getElementById('taskStatus').value = '';
+        localStorage.removeItem(DRAFT_KEY);
         loadTasks(currentPage);
       } catch (err) {
         errorDiv.textContent = err.response?.data?.error || 'Erreur lors de l\'ajout.';
@@ -462,36 +465,75 @@
       } catch (err) { alert('Erreur lors de la suppression.'); }
     }
 
-function applyFilters() { loadTasks(1); }
-function resetFilters() {
-  document.getElementById('searchInput').value = '';
-  document.getElementById('filterStatus').value = '';
-  document.getElementById('filterPriority').value = '';
-  document.getElementById('filterMember').value = '';
-  loadTasks(1);
-}
+    function applyFilters() { loadTasks(1); }
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterStatus').value = '';
+      document.getElementById('filterPriority').value = '';
+      document.getElementById('filterMember').value = '';
+      loadTasks(1);
+    }
 
-async function loadMembers() {
-  if (!PROJECT_ID) return;
-  try {
-    const res = await axios.get(`http://localhost:5000/api/projects/${PROJECT_ID}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const select = document.getElementById('filterMember');
-    const members = res.data.members || [];
-    members.forEach(member => {
-      const option = document.createElement('option');
-      option.value = member._id;
-      option.textContent = member.name || member.email;
-      select.appendChild(option);
-    });
-  } catch (err) {
-    console.log('Membres non disponibles pour linstant');
-  }
-}
+    async function loadMembers() {
+      if (!PROJECT_ID) return;
+      try {
+        const res = await axios.get(`http://localhost:5000/api/projects/${PROJECT_ID}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const select = document.getElementById('filterMember');
+        const members = res.data.members || [];
+        members.forEach(member => {
+          const option = document.createElement('option');
+          option.value = member._id;
+          option.textContent = member.name || member.email;
+          select.appendChild(option);
+        });
+      } catch (err) {
+        console.log('Membres non disponibles pour linstant');
+      }
+    }
 
-loadMembers();
-loadTasks();
+    ['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        const draft = {
+          title: document.getElementById('taskTitle').value,
+          priority: document.getElementById('taskPriority').value,
+          status: document.getElementById('taskStatus').value
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      });
+    });
+
+    document.getElementById('addTaskModal').addEventListener('show.bs.modal', () => {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if ((draft.title || draft.priority || draft.status) && confirm('💾 Brouillon détecté — Voulez-vous le restaurer ?')) {
+          document.getElementById('taskTitle').value = draft.title || '';
+          document.getElementById('taskPriority').value = draft.priority || '';
+          document.getElementById('taskStatus').value = draft.status || '';
+        }
+      }
+    });
+
+    async function pollNotifications() {
+      try {
+        const res = await axios.get('http://localhost:5000/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const unread = res.data.filter(n => !n.read).length;
+        document.getElementById('notifBadge').textContent = unread;
+        const read = res.data.filter(n => n.read);
+        localStorage.setItem('notifications_archived', JSON.stringify(read));
+      } catch (err) {
+        console.log('Notifications non disponibles');
+      }
+    }
+
+    loadMembers();
+    pollNotifications();
+    setInterval(pollNotifications, 30000);
+    loadTasks();
   </script>
 </body>
 </html>
