@@ -3,7 +3,7 @@ const router = express.Router();
 const Notification = require("../models/notification");
 
 const fakeAuth = (req, res, next) => {
-    requ.user = { id: "6650000000000000000test01" };
+    req.user = { id: "6650000000000000000test01" };
     next();
 };
 //GET /api/notifications
