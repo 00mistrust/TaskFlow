@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F10 - Notifications</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; }
+    </style>
+</head>
+<body class="text-light">
+
+    <!-- BARRE DE NAVIGATION avec cloche -->
+    <nav class="navbar navbar-dark bg-dark px-4">
+        <span class="navbar-brand">🚀 TaskFlow</span>
+        <div id="notif-wrapper" style="position:relative; cursor:pointer;" onclick="togglePanel()">
+            <span style="font-size:1.5rem;">🔔</span>
+            <span id="badge" class="badge bg-danger" style="position:absolute; top:-6px; right:-8px; display:none;">0</span>
+        </div>
+    </nav>
+
+    <!-- PANNEAU NOTIFICATIONS -->
+    <div id="notif-panel" style="display:none; position:absolute; top:60px; right:1rem; width:320px; max-height:400px; overflow-y:auto; z-index:100;" class="card bg-dark border-secondary">
+        <div class="card-header text-secondary">🔔 Notifications</div>
+        <div id="notif-list">
+            <p class="text-center text-secondary p-3" id="empty-msg">Aucune notification</p>
+        </div>
+    </div>
+
+    <!-- CONTENU PRINCIPAL -->
+    <div class="container mt-5">
+        <h4 class="text-info">Tableau de bord</h4>
+        <p class="text-secondary">Les notifications arrivent toutes les 30 secondes.</p>
+        <div id="status-log" class="bg-dark border border-secondary rounded p-3 small text-secondary" style="max-height:150px; overflow-y:auto;">
+            <p>En attente du premier polling...</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        let notifications = [];
+        const ARCHIVE_KEY = "notifications_archived";
+
+        const badge      = document.getElementById("badge");
+        const notifList  = document.getElementById("notif-list");
+        const notifPanel = document.getElementById("notif-panel");
+        const statusLog  = document.getElementById("status-log");
+
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            const p = document.createElement("p");
+            p.textContent = `[${time}] ${message}`;
+            p.className = "mb-0";
+            statusLog.prepend(p);
+        }
+
+        function togglePanel() {
+            notifPanel.style.display = notifPanel.style.display === "block" ? "none" : "block";
+        }
+
+        function updateBadge() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            if (unreadCount > 0) {
+                badge.style.display = "block";
+                badge.textContent = unreadCount;
+            } else {
+                badge.style.display = "none";
+            }
+        }
+
+        function renderNotifications() {
+            notifList.innerHTML = "";
+            if (notifications.length === 0) {
+                notifList.innerHTML = '<p class="text-center text-secondary p-3">Aucune notification</p>';
+                return;
+            }
+            notifications.forEach(notif => {
+                const item = document.createElement("div");
+                item.className = "p-3 border-bottom border-secondary " + (notif.read ? "text-secondary" : "text-light");
+                item.style.cursor = "pointer";
+                item.style.background = notif.read ? "transparent" : "#1d3557";
+                item.innerHTML = `<div>${notif.message}</div><small class="text-secondary">${new Date(notif.createdAt).toLocaleString()}</small>`;
+                item.addEventListener("click", () => markAsRead(notif._id));
+                notifList.appendChild(item);
+            });
+        }
+
+        async function markAsRead(notifId) {
+            try {
+                await axios.patch(`/api/notifications/${notifId}/read`);
+            } catch (err) {
+                log("Marquage local seulement");
+            }
+            const notif = notifications.find(n => n._id === notifId);
+            if (notif) notif.read = true;
+            archiveReadNotifications();
+            renderNotifications();
+            updateBadge();
+        }
+
+        function archiveReadNotifications() {
+            const readNotifs = notifications.filter(n => n.read);
+            localStorage.setItem(ARCHIVE_KEY, JSON.stringify(readNotifs));
+        }
+
+        function loadArchivedNotifications() {
+            const archived = localStorage.getItem(ARCHIVE_KEY);
+            if (archived) {
+                notifications = JSON.parse(archived);
+                log(`${notifications.length} notification(s) chargée(s) depuis les archives`);
+                renderNotifications();
+                updateBadge();
+            }
+        }
+
+        async function pollNotifications() {
+            log("🔄 Polling en cours...");
+            try {
+                const response = await axios.get("/api/notifications");
+                response.data.forEach(newNotif => {
+                    const exists = notifications.find(n => n._id === newNotif._id);
+                    if (!exists) notifications.unshift(newNotif);
+                });
+                renderNotifications();
+                updateBadge();
+            } catch (err) {
+                log("⚠️ Serveur non disponible — simulation");
+                const fakeNotif = {
+                    _id: "fake_" + Date.now(),
+                    message: "🔔 (Test) Une tâche vous a été assignée",
+                    read: false,
+                    createdAt: new Date().toISOString()
+                };
+                notifications.unshift(fakeNotif);
+                renderNotifications();
+                updateBadge();
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadArchivedNotifications();
+            pollNotifications();
+            setInterval(pollNotifications, 30000);
+            log("✅ Système de notifications initialisé");
+        });
+    </script>
+</body>
+</html>

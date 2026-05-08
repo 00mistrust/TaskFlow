@@ -1,6 +1,7 @@
-const Task = require('../models/task');
+const Task = require('../models/Task');
+const { logActivity } = require('./activityController');
 
-
+// GET toutes les tâches d'un projet
 exports.getTasksByProject = async (req, res) => {
   try {
     const tasks = await Task.find({ project: req.params.id })
@@ -12,7 +13,7 @@ exports.getTasksByProject = async (req, res) => {
   }
 };
 
-
+// GET tâches assignées à l'utilisateur connecté
 exports.getMyTasks = async (req, res) => {
   try {
     const tasks = await Task.find({
@@ -27,7 +28,7 @@ exports.getMyTasks = async (req, res) => {
   }
 };
 
-
+// POST créer une tâche
 exports.createTask = async (req, res) => {
   try {
     const task = new Task({
@@ -35,13 +36,22 @@ exports.createTask = async (req, res) => {
       project: req.params.id
     });
     await task.save();
+
+    // Log activité ⭐
+    await logActivity(
+      'task_created',
+      req.params.id,
+      req.user.id,
+      `A créé la tâche "${task.title}"`
+    );
+
     res.status(201).json(task);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
-
+// PUT modifier une tâche
 exports.updateTask = async (req, res) => {
   try {
     const task = await Task.findByIdAndUpdate(
@@ -56,7 +66,7 @@ exports.updateTask = async (req, res) => {
   }
 };
 
-
+// PATCH mettre à jour le statut
 exports.updateTaskStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -72,18 +82,27 @@ exports.updateTaskStatus = async (req, res) => {
   }
 };
 
-
+// DELETE supprimer une tâche
 exports.deleteTask = async (req, res) => {
   try {
     const task = await Task.findByIdAndDelete(req.params.id);
     if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
+
+    // Log activité ⭐
+    await logActivity(
+      'task_deleted',
+      task.project,
+      req.user.id,
+      `A supprimé la tâche "${task.title}"`
+    );
+
     res.json({ message: 'Tâche supprimée' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-
+// PATCH assigner une tâche à un membre
 exports.assignTask = async (req, res) => {
   try {
     const { assignedTo } = req.body;
@@ -98,12 +117,3 @@ exports.assignTask = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
-
-
-
-
-
-
-
-
-

@@ -66,6 +66,10 @@
             <i class="bi bi-folder me-1"></i>Projets
           </a>
         </li>
+          <li class="nav-item">
+            <a class="nav-link" href="members.html">
+              <i class="bi bi-people me-1"></i>Membres
+            </a>
         <li class="nav-item">
           <a class="nav-link active" href="tasks.html">
             <i class="bi bi-check2-square me-1"></i>Tâches
@@ -334,37 +338,31 @@
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
         const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         return `
-        <div class="col-md-6 col-lg-4">
-          <div class="card task-card shadow-sm h-100">
-            <div class="card-body p-4">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
-                <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
+          <div class="col-md-6 col-lg-4">
+            <div class="card task-card shadow-sm h-100">
+              <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
+                  <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
+                </div>
+                ${descriptionText}
+                <span class="badge ${statusClass} text-white mb-3">${task.status}</span>
+                <div class="d-flex gap-2 mt-3">
+                  <select class="form-select form-select-sm" onchange="updateStatus('${task._id}', this.value)">
+                    <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
+                    <option value="en cours" ${task.status === 'en cours' ? 'selected' : ''}>En cours</option>
+                    <option value="terminé" ${task.status === 'terminé' ? 'selected' : ''}>Terminé</option>
+                  </select>
+                  <button class="btn btn-outline-primary btn-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm" onclick="deleteTask('${task._id}')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
               </div>
-              ${descriptionText}
-              <span class="badge ${statusClass} text-white mb-3">${task.status}</span>
-              <div class="d-flex gap-2 mt-3 flex-wrap">
-                <select class="form-select form-select-sm" onchange="updateStatus('${task._id}', this.value)">
-                  <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
-                  <option value="en cours" ${task.status === 'en cours' ? 'selected' : ''}>En cours</option>
-                  <option value="terminé" ${task.status === 'terminé' ? 'selected' : ''}>Terminé</option>
-                </select>
-                <select class="form-select form-select-sm" id="assign-${task._id}">
-                  <option value="">Assigner à...</option>
-                </select>
-                <button class="btn btn-outline-success btn-sm" onclick="assignTask('${task._id}')">
-                  <i class="bi bi-person-check"></i>
-                </button>
-                <button class="btn btn-outline-primary btn-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-outline-danger btn-sm" onclick="deleteTask('${task._id}')">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-           </div>
-         </div>
-        </div>`;
+            </div>
+          </div>`;
       }).join('');
     }
 
@@ -540,19 +538,6 @@
     pollNotifications();
     setInterval(pollNotifications, 30000);
     loadTasks();
-    
-    async function assignTask(taskId) {
-      const select = document.getElementById(`assign-${taskId}`);
-      const assignedTo = select.value;
-      if (!assignedTo) return alert('Veuillez choisir un membre.');
-      try {
-        await axios.patch(`${BASE_URL}/${taskId}/assign`, { assignedTo }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        loadTasks(currentPage);
-      } catch (err) {
-        alert('Erreur lors de l\'assignation.');
-      }}
   </script>
 </body>
 </html>
