@@ -18,3 +18,4 @@ npm-debug.log*
 # Dossier de build
 dist/
 build/
+data/
