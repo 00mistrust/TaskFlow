@@ -3,11 +3,13 @@ const router = express.Router();
 const Task = require('../models/task');
 const auth = require('../middleware/auth');
 
-// GET toutes les tâches d'un projet AVEC filtrage, recherche et pagination
+// GET toutes les tâches d'un projet AVEC filtrage, recherche et pagination (F6)
 router.get('/project/:id', auth, async (req, res) => {
   try {
     const { status, priority, assignedTo, search, page = 1, limit = 10 } = req.query;
+
     const filter = { project: req.params.id };
+
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
     if (assignedTo) filter.assignedTo = assignedTo;
@@ -15,15 +17,24 @@ router.get('/project/:id', auth, async (req, res) => {
       { title: { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } }
     ];
+
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
+
     const total = await Task.countDocuments(filter);
     const tasks = await Task.find(filter)
       .populate('assignedTo', 'name email')
       .skip(skip)
       .limit(limitNum);
-    res.json({ data: tasks, total, page: pageNum, totalPages: Math.ceil(total / limitNum) });
+
+    res.json({
+      data: tasks,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -41,26 +52,37 @@ router.get('/my-tasks', auth, async (req, res) => {
   }
 });
 
-// GET toutes les tâches
+// GET toutes les tâches AVEC filtrage et pagination
 router.get('/', auth, async (req, res) => {
   try {
     const { status, priority, search, page = 1, limit = 10 } = req.query;
+
     const filter = {};
+
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
     if (search) filter.$or = [
       { title: { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } }
     ];
+
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
+
     const total = await Task.countDocuments(filter);
     const tasks = await Task.find(filter)
       .populate('assignedTo', 'name email')
       .skip(skip)
       .limit(limitNum);
-    res.json({ data: tasks, total, page: pageNum, totalPages: Math.ceil(total / limitNum) });
+
+    res.json({
+      data: tasks,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
