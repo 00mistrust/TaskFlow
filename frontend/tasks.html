@@ -66,6 +66,10 @@
             <i class="bi bi-folder me-1"></i>Projets
           </a>
         </li>
+          <li class="nav-item">
+            <a class="nav-link" href="members.html">
+              <i class="bi bi-people me-1"></i>Membres
+            </a>
         <li class="nav-item">
           <a class="nav-link active" href="tasks.html">
             <i class="bi bi-check2-square me-1"></i>Tâches
@@ -105,13 +109,13 @@
 
     <div class="filter-section mb-4">
       <div class="row g-3 align-items-end">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label text-muted small fw-semibold">RECHERCHER</label>
           <div class="input-group">
             <span class="input-group-text bg-white border-end-0">
               <i class="bi bi-search text-muted"></i>
             </span>
-            <input type="text" class="form-control border-start-0" id="searchInput" placeholder="Mot-clé dans le titre...">
+            <input type="text" class="form-control border-start-0" id="searchInput" placeholder="Mot-clé dans le titre ou description...">
           </div>
         </div>
         <div class="col-md-2">
@@ -133,6 +137,12 @@
           </select>
         </div>
         <div class="col-md-2">
+          <label class="form-label text-muted small fw-semibold">MEMBRE</label>
+          <select class="form-select" id="filterMember">
+            <option value="">Tous</option>
+          </select>
+        </div>
+        <div class="col-md-1">
           <button class="btn btn-primary w-100" onclick="applyFilters()">
             <i class="bi bi-funnel me-1"></i>Filtrer
           </button>
@@ -156,7 +166,7 @@
 
   </div>
 
-  <!-- Modal -->
+  <!-- Add Task Modal -->
   <div class="modal fade" id="addTaskModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content" style="border-radius: 16px; border: none;">
@@ -170,6 +180,10 @@
           <div class="mb-3">
             <label class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="taskTitle" placeholder="Ex: Créer la page d'accueil">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="taskDescription" rows="2" placeholder="Description optionnelle..."></textarea>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Priorité <span class="text-danger">*</span></label>
@@ -201,6 +215,54 @@
     </div>
   </div>
 
+  <!-- Edit Task Modal -->
+  <div class="modal fade" id="editTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content" style="border-radius: 16px; border: none;">
+        <div class="modal-header" style="background-color: #4f46e5; border-radius: 16px 16px 0 0;">
+          <h5 class="modal-title text-white">
+            <i class="bi bi-pencil-square me-2"></i>Modifier la tâche
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <input type="hidden" id="editTaskId">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editTaskTitle">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="editTaskDescription" rows="3" placeholder="Description optionnelle..."></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Priorité <span class="text-danger">*</span></label>
+            <select class="form-select" id="editTaskPriority">
+              <option value="haute">🔴 Haute</option>
+              <option value="moyenne">🟡 Moyenne</option>
+              <option value="basse">🟢 Basse</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Statut <span class="text-danger">*</span></label>
+            <select class="form-select" id="editTaskStatus">
+              <option value="à faire">À faire</option>
+              <option value="en cours">En cours</option>
+              <option value="terminé">Terminé</option>
+            </select>
+          </div>
+          <div id="editFormError" class="alert alert-danger d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" onclick="saveEdit()">
+            <i class="bi bi-check2 me-1"></i>Sauvegarder
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
@@ -222,11 +284,14 @@
     const params = new URLSearchParams(window.location.search);
     const PROJECT_ID = params.get('id') || null;
 
+    const DRAFT_KEY = 'draft_' + (PROJECT_ID || 'default');
+
     async function loadTasks(page = 1) {
       try {
         const search = document.getElementById('searchInput').value;
         const status = document.getElementById('filterStatus').value;
         const priority = document.getElementById('filterPriority').value;
+        const member = document.getElementById('filterMember').value;
 
         const query = new URLSearchParams();
         query.append('page', page);
@@ -234,6 +299,7 @@
         if (search) query.append('search', search);
         if (status) query.append('status', status);
         if (priority) query.append('priority', priority);
+        if (member) query.append('assignedTo', member);
 
         const url = PROJECT_ID
           ? `${BASE_URL}/project/${PROJECT_ID}?${query}`
@@ -269,14 +335,17 @@
       list.innerHTML = tasks.map(task => {
         const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
+        const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
+        const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         return `
           <div class="col-md-6 col-lg-4">
             <div class="card task-card shadow-sm h-100">
               <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                  <h6 class="card-title fw-semibold mb-0" style="color: #1f2937;">${task.title}</h6>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
                   <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
                 </div>
+                ${descriptionText}
                 <span class="badge ${statusClass} text-white mb-3">${task.status}</span>
                 <div class="d-flex gap-2 mt-3">
                   <select class="form-select form-select-sm" onchange="updateStatus('${task._id}', this.value)">
@@ -284,6 +353,9 @@
                     <option value="en cours" ${task.status === 'en cours' ? 'selected' : ''}>En cours</option>
                     <option value="terminé" ${task.status === 'terminé' ? 'selected' : ''}>Terminé</option>
                   </select>
+                  <button class="btn btn-outline-primary btn-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
                   <button class="btn btn-outline-danger btn-sm" onclick="deleteTask('${task._id}')">
                     <i class="bi bi-trash"></i>
                   </button>
@@ -311,6 +383,7 @@
       const title = document.getElementById('taskTitle').value.trim();
       const priority = document.getElementById('taskPriority').value;
       const status = document.getElementById('taskStatus').value;
+      const description = document.getElementById('taskDescription').value;
       const errorDiv = document.getElementById('formError');
 
       if (!title || !priority || !status) {
@@ -322,18 +395,57 @@
 
       try {
         await axios.post(BASE_URL, {
-          title, priority, status,
+          title, description, priority, status,
           project: PROJECT_ID || '507f1f77bcf86cd799439011'
         }, { headers: { Authorization: `Bearer ${token}` } });
 
         bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
         document.getElementById('taskTitle').value = '';
+        document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
         document.getElementById('taskStatus').value = '';
-        loadTasks(currentPage);
         localStorage.removeItem(DRAFT_KEY);
+        loadTasks(currentPage);
       } catch (err) {
         errorDiv.textContent = err.response?.data?.error || 'Erreur lors de l\'ajout.';
+        errorDiv.classList.remove('d-none');
+      }
+    }
+
+    function openEdit(id, title, description, priority, status) {
+      document.getElementById('editTaskId').value = id;
+      document.getElementById('editTaskTitle').value = title;
+      document.getElementById('editTaskDescription').value = description;
+      document.getElementById('editTaskPriority').value = priority;
+      document.getElementById('editTaskStatus').value = status;
+      document.getElementById('editFormError').classList.add('d-none');
+      new bootstrap.Modal(document.getElementById('editTaskModal')).show();
+    }
+
+    async function saveEdit() {
+      const id = document.getElementById('editTaskId').value;
+      const title = document.getElementById('editTaskTitle').value.trim();
+      const description = document.getElementById('editTaskDescription').value;
+      const priority = document.getElementById('editTaskPriority').value;
+      const status = document.getElementById('editTaskStatus').value;
+      const errorDiv = document.getElementById('editFormError');
+
+      if (!title) {
+        errorDiv.textContent = 'Le titre est obligatoire.';
+        errorDiv.classList.remove('d-none');
+        return;
+      }
+      errorDiv.classList.add('d-none');
+
+      try {
+        await axios.put(`${BASE_URL}/${id}`, {
+          title, description, priority, status
+        }, { headers: { Authorization: `Bearer ${token}` } });
+
+        bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();
+        loadTasks(currentPage);
+      } catch (err) {
+        errorDiv.textContent = err.response?.data?.error || 'Erreur lors de la modification.';
         errorDiv.classList.remove('d-none');
       }
     }
@@ -362,13 +474,29 @@
       document.getElementById('searchInput').value = '';
       document.getElementById('filterStatus').value = '';
       document.getElementById('filterPriority').value = '';
+      document.getElementById('filterMember').value = '';
       loadTasks(1);
     }
-    // F7: SAUVEGARDE AUTOMATIQUE DES BROUILLONS
-// F7: SAUVEGARDE AUTOMATIQUE DES BROUILLONS
-    const DRAFT_KEY = 'draft_' + (PROJECT_ID || 'default');
 
-    // 1. Listen for inputs to save draft
+    async function loadMembers() {
+      if (!PROJECT_ID) return;
+      try {
+        const res = await axios.get(`http://localhost:5000/api/projects/${PROJECT_ID}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const select = document.getElementById('filterMember');
+        const members = res.data.members || [];
+        members.forEach(member => {
+          const option = document.createElement('option');
+          option.value = member._id;
+          option.textContent = member.name || member.email;
+          select.appendChild(option);
+        });
+      } catch (err) {
+        console.log('Membres non disponibles pour linstant');
+      }
+    }
+
     ['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
       document.getElementById(id).addEventListener('input', () => {
         const draft = {
@@ -378,14 +506,12 @@
         };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       });
-    }); // Added missing closing brace/paren for forEach
+    });
 
-    // 2. Restore draft when modal opens
     document.getElementById('addTaskModal').addEventListener('show.bs.modal', () => {
-      const saved = localStorage.getItem(DRAFT_KEY); // Define 'saved' here
+      const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const draft = JSON.parse(saved);
-        // Only confirm if there's actually content in the draft
         if ((draft.title || draft.priority || draft.status) && confirm('💾 Brouillon détecté — Voulez-vous le restaurer ?')) {
           document.getElementById('taskTitle').value = draft.title || '';
           document.getElementById('taskPriority').value = draft.priority || '';
@@ -401,7 +527,6 @@
         });
         const unread = res.data.filter(n => !n.read).length;
         document.getElementById('notifBadge').textContent = unread;
-        
         const read = res.data.filter(n => n.read);
         localStorage.setItem('notifications_archived', JSON.stringify(read));
       } catch (err) {
@@ -409,7 +534,7 @@
       }
     }
 
-    // Initialize
+    loadMembers();
     pollNotifications();
     setInterval(pollNotifications, 30000);
     loadTasks();
