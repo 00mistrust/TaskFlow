@@ -14,9 +14,9 @@ router.get('/project/:id', auth, async (req, res) => {
     if (priority) filter.priority = priority;
     if (assignedTo) filter.assignedTo = assignedTo;
     if (search) filter.$or = [
-  { title: { $regex: search, $options: 'i' } },
-  { description: { $regex: search, $options: 'i' } }
-];
+      { title: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
+    ];
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
@@ -24,6 +24,7 @@ router.get('/project/:id', auth, async (req, res) => {
 
     const total = await Task.countDocuments(filter);
     const tasks = await Task.find(filter)
+      .populate('assignedTo', 'name email')
       .skip(skip)
       .limit(limitNum);
 
@@ -39,6 +40,18 @@ router.get('/project/:id', auth, async (req, res) => {
   }
 });
 
+// GET tâches assignées à l'utilisateur connecté (dashboard)
+router.get('/my-tasks', auth, async (req, res) => {
+  try {
+    const tasks = await Task.find({ assignedTo: req.user.id })
+      .populate('assignedTo', 'name email')
+      .sort({ priority: -1, dueDate: 1 });
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET toutes les tâches AVEC filtrage et pagination
 router.get('/', auth, async (req, res) => {
   try {
@@ -48,12 +61,10 @@ router.get('/', auth, async (req, res) => {
 
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
-    if (search) {
-  filter.$or = [
-    { title: { $regex: search, $options: 'i' } },
-    { description: { $regex: search, $options: 'i' } }
-  ];
-}
+    if (search) filter.$or = [
+      { title: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
+    ];
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
@@ -61,6 +72,7 @@ router.get('/', auth, async (req, res) => {
 
     const total = await Task.countDocuments(filter);
     const tasks = await Task.find(filter)
+      .populate('assignedTo', 'name email')
       .skip(skip)
       .limit(limitNum);
 
@@ -91,10 +103,10 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const task = await Task.findByIdAndUpdate(
-      req.params.id, 
-      req.body, 
+      req.params.id,
+      req.body,
       { new: true, runValidators: true }
-    );
+    ).populate('assignedTo', 'name email');
     if (!task) return res.status(404).json({ error: 'Tâche non trouvée' });
     res.json(task);
   } catch (err) {
@@ -109,7 +121,22 @@ router.patch('/:id/status', auth, async (req, res) => {
       req.params.id,
       { status: req.body.status },
       { new: true, runValidators: true }
-    );
+    ).populate('assignedTo', 'name email');
+    if (!task) return res.status(404).json({ error: 'Tâche non trouvée' });
+    res.json(task);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// PATCH assigner une tâche à un membre
+router.patch('/:id/assign', auth, async (req, res) => {
+  try {
+    const task = await Task.findByIdAndUpdate(
+      req.params.id,
+      { assignedTo: req.body.assignedTo },
+      { new: true }
+    ).populate('assignedTo', 'name email');
     if (!task) return res.status(404).json({ error: 'Tâche non trouvée' });
     res.json(task);
   } catch (err) {
