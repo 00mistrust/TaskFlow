@@ -100,12 +100,14 @@
 
   <div class="container mt-5">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 style="color: #3c3489;"><i class="bi bi-check2-square me-2"></i>Gestion des tâches</h2>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
-        <i class="bi bi-plus-lg me-1"></i>Nouvelle tâche
-      </button>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 style="color: #3c3489;"><i class="bi bi-check2-square me-2"></i>Gestion des tâches</h2>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+      <i class="bi bi-plus-lg me-1"></i>Nouvelle tâche
+    </button>
+  </div>
+</div>
 
     <div class="filter-section mb-4">
       <div class="row g-3 align-items-end">
@@ -206,6 +208,9 @@
           <div id="formError" class="alert alert-danger d-none"></div>
         </div>
         <div class="modal-footer">
+        <a href="brouillons.html" class="btn btn-outline-warning">
+          <i class="bi bi-file-earmark-text me-1"></i>Brouillon
+        </a>
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
           <button type="button" class="btn btn-primary" onclick="addTask()">
             <i class="bi bi-check2 me-1"></i>Ajouter
@@ -512,10 +517,11 @@
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const draft = JSON.parse(saved);
-        if ((draft.title || draft.priority || draft.status) && confirm('💾 Brouillon détecté — Voulez-vous le restaurer ?')) {
+        if (saved) {
           document.getElementById('taskTitle').value = draft.title || '';
           document.getElementById('taskPriority').value = draft.priority || '';
           document.getElementById('taskStatus').value = draft.status || '';
+           document.getElementById('taskDescription').value = draft.description || '';
         }
       }
     });
@@ -537,6 +543,11 @@
     loadMembers();
     pollNotifications();
     setInterval(pollNotifications, 30000);
+    // Ouvrir le modal automatiquement si on vient du brouillon
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('openDraft') === 'true') {
+  new bootstrap.Modal(document.getElementById('addTaskModal')).show();
+}
     loadTasks();
   </script>
 </body>
