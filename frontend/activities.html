@@ -86,11 +86,15 @@
         </li>
       </ul>
       <ul class="navbar-nav ms-auto align-items-center">
+        <!-- Icône Historique -->
         <li class="nav-item me-3">
           <a class="nav-link active" href="activities.html" title="Historique des activités">
             <i class="bi bi-clock-history fs-5"></i>
           </a>
         </li>
+        <!-- Icône Notifications -->
+        <li class="nav-item me-3">
+          <a class="nav-link position-relative" href="#">
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="notifications.html">
             <i class="bi bi-bell-fill fs-5"></i>
@@ -147,6 +151,7 @@
 
     const params = new URLSearchParams(window.location.search);
     const PROJECT_ID = params.get('id');
+    if (!PROJECT_ID) window.location.href = 'projects.html';
 
     function getIcon(actionType) {
       const icons = {
