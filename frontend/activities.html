@@ -45,6 +45,13 @@
       letter-spacing: 0.05em;
       margin: 20px 0 10px;
     }
+    .example-box {
+      background: #f5f3ff;
+      border-left: 4px solid #3c3489;
+      border-radius: 0 12px 12px 0;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -68,6 +75,10 @@
             <i class="bi bi-folder me-1"></i>Projets
           </a>
         </li>
+              <li class="nav-item">
+        <a class="nav-link" href="members.html">
+          <i class="bi bi-people me-1"></i>Membres
+        </a>
         <li class="nav-item">
           <a class="nav-link" href="tasks.html">
             <i class="bi bi-check2-square me-1"></i>Tâches
@@ -84,6 +95,8 @@
         <!-- Icône Notifications -->
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="#">
+        <li class="nav-item me-3">
+          <a class="nav-link position-relative" href="notifications.html">
             <i class="bi bi-bell-fill fs-5"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifBadge">0</span>
           </a>
@@ -168,7 +181,44 @@
       });
     }
 
+    function showNoProject() {
+      document.getElementById('activityFeed').innerHTML = `
+        <div class="empty-state">
+          <i class="bi bi-clock-history fs-1 mb-3 d-block" style="color:#3c3489;"></i>
+          <h5 style="color:#3c3489;" class="mb-3">Historique des activités</h5>
+          <div class="example-box text-start mb-4" style="max-width:500px;margin:0 auto;">
+            <p class="mb-2 fw-semibold" style="color:#3c3489;">
+              <i class="bi bi-info-circle me-1"></i>Exemples d'activités :
+            </p>
+            <p class="mb-1" style="color:#374151;">
+              <i class="bi bi-arrow-repeat me-2 text-warning"></i>
+              <strong>Adil</strong> a changé le statut de Maquette à Terminé — 
+              <span class="text-muted fst-italic">il y a 2 heures</span>
+            </p>
+            <p class="mb-1" style="color:#374151;">
+              <i class="bi bi-plus-circle me-2 text-primary"></i>
+              <strong>Sara</strong> a créé la tâche "Configurer Docker" — 
+              <span class="text-muted fst-italic">il y a 1 jour</span>
+            </p>
+            <p class="mb-1" style="color:#374151;">
+              <i class="bi bi-person-plus me-2 text-success"></i>
+              <strong>Mohamed</strong> a ajouté Lina comme membre — 
+              <span class="text-muted fst-italic">il y a 3 jours</span>
+            </p>
+          </div>
+          <p class="text-muted small">Sélectionnez un projet pour voir son historique réel.</p>
+          <a href="projects.html" class="btn btn-primary mt-2">
+            <i class="bi bi-folder me-1"></i>Voir mes projets
+          </a>
+        </div>`;
+    }
+
     async function loadActivities() {
+      if (!PROJECT_ID) {
+        showNoProject();
+        return;
+      }
+
       try {
         const res = await axios.get(
           `http://localhost:5000/api/projects/${PROJECT_ID}/activities`,
@@ -207,8 +257,9 @@
                 <i class="bi ${icon}"></i>
               </div>
               <div class="flex-grow-1">
-                <p class="mb-1" style="color: #1f2937;">
-                  <strong>${userName}</strong> ${activity.description} — <span class="text-muted fst-italic">${ago}</span>
+                <p class="mb-0" style="color: #1f2937;">
+                  <strong>${userName}</strong> ${activity.description} — 
+                  <span class="text-muted fst-italic">${ago}</span>
                 </p>
               </div>
             </div>`;
