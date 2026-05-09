@@ -1,9 +1,10 @@
+console.log("JS loaded");
 const form = document.getElementById('projectForm');
 const container = document.getElementById('container');
 
 // فاش نكليكي على "Créer"
 form.addEventListener('submit', async (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
 
     const projectData = {
         title: document.getElementById('title').value,
