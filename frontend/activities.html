@@ -151,7 +151,6 @@
 
     const params = new URLSearchParams(window.location.search);
     const PROJECT_ID = params.get('id');
-    if (!PROJECT_ID) window.location.href = 'projects.html';
 
     function getIcon(actionType) {
       const icons = {
