@@ -228,14 +228,20 @@
     });
 
     // Soumission
-    taskForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      localStorage.removeItem(DRAFT_KEY);
-      taskForm.reset();
-      savedIndicator.textContent = "✅ Tâche créée, brouillon supprimé";
-      setTimeout(() => { savedIndicator.textContent = ""; }, 3000);
-      window.location.href = 'tasks.html';
-    });
+taskForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  // Sauvegarde le brouillon avec les clés de tasks.html
+  const draft = {
+    title:    titreInput.value,
+    priority: prioriteSelect.value,
+    status:   ''
+  };
+  localStorage.setItem('draft_default', JSON.stringify(draft));
+
+  // Redirige vers tasks.html — le modal s'ouvrira automatiquement
+  window.location.href = 'tasks.html?openDraft=true';
+});
 
     // Polling notifications
     async function pollNotifications() {
