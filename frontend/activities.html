@@ -117,9 +117,7 @@
 
   <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 style="color: #3c3489;">
-        <i class="bi bi-clock-history me-2"></i>Historique des activités
-      </h2>
+      <h2 style="color: #3c3489;"><strong>Historique des activités</strong></h2>
       <a href="projects.html" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i>Retour aux projets
       </a>
@@ -183,30 +181,12 @@
       document.getElementById('activityFeed').innerHTML = `
         <div class="empty-state">
           <i class="bi bi-clock-history fs-1 mb-3 d-block" style="color:#3c3489;"></i>
-          <h5 style="color:#3c3489;" class="mb-3">Historique des activités</h5>
           <div class="example-box text-start mb-4" style="max-width:500px;margin:0 auto;">
-            <p class="mb-2 fw-semibold" style="color:#3c3489;">
-              <i class="bi bi-info-circle me-1"></i>Exemples d'activités :
-            </p>
-            <p class="mb-1" style="color:#374151;">
-              <i class="bi bi-arrow-repeat me-2 text-warning"></i>
-              <strong>Adil</strong> a changé le statut de Maquette à Terminé — 
-              <span class="text-muted fst-italic">il y a 2 heures</span>
-            </p>
-            <p class="mb-1" style="color:#374151;">
-              <i class="bi bi-plus-circle me-2 text-primary"></i>
-              <strong>Sara</strong> a créé la tâche "Configurer Docker" — 
-              <span class="text-muted fst-italic">il y a 1 jour</span>
-            </p>
-            <p class="mb-1" style="color:#374151;">
-              <i class="bi bi-person-plus me-2 text-success"></i>
-              <strong>Mohamed</strong> a ajouté Lina comme membre — 
-              <span class="text-muted fst-italic">il y a 3 jours</span>
-            </p>
+           <p class="mb-1"><strong><center>Historique est vide</strong></p>  
           </div>
           <p class="text-muted small">Sélectionnez un projet pour voir son historique réel.</p>
-          <a href="projects.html" class="btn btn-primary mt-2">
-            <i class="bi bi-folder me-1"></i>Voir mes projets
+          <a href="projects.html" class="btn btn-primary mt-2" style="background-color:#3c3489; border-color:#3c3489;">
+            <i class="bi-folder me-1"></i>voir mes projets
           </a>
         </div>`;
     }
