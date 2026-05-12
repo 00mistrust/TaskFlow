@@ -1,17 +1,16 @@
 const form = document.getElementById('projectForm');
-const listeUl = document.getElementById('listeProjets'); // الـ UL اللي غنزيدو فيها
+const listeUl = document.getElementById('listeProjets'); 
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // 1. كنجيبو القيم من الـ inputs
+    // inputs
     const title = document.getElementById('title').value;
     const description = document.getElementById('description').value;
     const deadline = document.getElementById('deadline').value;
 
     if (title.trim() === "") return;
 
-    // 2. كنصيفطو الداتا للباكيند (باش تبقى مسيفية)
     try {
         const response = await fetch('http://127.0.0.1:5000/api/projects', {
             method: 'POST',
@@ -20,51 +19,48 @@ form.addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            // --- هاد الجزء هو اللي كيخلي المشروع يبان بحال التصويرة ---
             
-            // TODO 2: Créer un élément <li>
-            const li = document.createElement('li');
-            li.className = "list-group-item d-flex justify-content-between align-items-center mb-2 shadow-sm";
-
-            // TODO 3: Mettre le texte (العنوان لي كتبتيه)
-            // درنا span باش نتحكمو ف الستيل بحال التصويرة
-            const span = document.createElement('span');
-            span.innerHTML = `<strong class="text-primary">${title}</strong>`; 
-            li.appendChild(span);
-
-            // TODO 4: Créer le bouton 'Supprimer'
-            const btnSupprimer = document.createElement('button');
-            btnSupprimer.textContent = "Supprimer";
-            btnSupprimer.className = "btn btn-light border btn-sm"; // ستيل كيشبه للتصويرة
+            ajouterProjetALaVue(title, description, deadline);
             
-            btnSupprimer.onclick = function() {
-                li.remove(); // كيمسح السطر
-            };
-
-            // TODO 5: Ajouter le bouton dans le <li> عاد الـ <li> في الـ <ul>
-            li.appendChild(btnSupprimer);
-            listeUl.appendChild(li);
-
-            // TODO 6: Vider le champ
-            form.reset();
+            
+            form.reset(); 
         }
     } catch (error) {
-        // إيلا السيرفر فيه مشكل، غنزيدوه غير فـ الواجهة (Front) باش تشوفي النتيجة
-        console.log("الباكيند مجاوبش، ولكن غنزيدوه ف الـ DOM باش تشوفيه");
-        creerElementManuellement(title); 
+        console.log("الباكيند مجاوبش، ولكن غنزيدوه يدوياً باش تشوفيه");
+        ajouterProjetALaVue(title, description, deadline);
+        
+        
+        form.reset(); 
     }
 });
 
-// دالة مساعدة إيلا بغيتي غير التيست بلا سيرفر
-function creerElementManuellement(valeur) {
+
+function ajouterProjetALaVue(title, desc, date) {
     const li = document.createElement('li');
-    li.className = "list-group-item d-flex justify-content-between align-items-center mb-2";
-    li.innerHTML = `<span style="color: black;">• ${valeur}</span>`;
+    li.className = "list-group-item d-flex justify-content-between align-items-center mb-2 shadow-sm p-3";
+
+    li.innerHTML = `
+        <div style="display: flex; flex-grow: 1; align-items: center; gap: 30px;">
+            <div style="min-width: 150px;">
+                <strong>Nom projet :</strong> <span class="text-primary">${title}</span>
+            </div>
+            <div style="min-width: 250px; flex-grow: 1;">
+                <strong>Description :</strong> <span class="text-muted">${desc || '---'}</span>
+            </div>
+            <div style="min-width: 180px;">
+                <strong>Delay :</strong> <span>${date || 'Non défini'}</span>
+            </div>
+        </div>
+    `;
+
+    const btnSupprimer = document.createElement('button');
+    btnSupprimer.textContent = "Supprimer";
+    btnSupprimer.className = "btn btn-outline-danger btn-sm ms-3"; 
     
-    const btn = document.createElement('button');
-    btn.textContent = "Supprimer";
-    btn.onclick = () => li.remove();
-    
-    li.appendChild(btn);
+    btnSupprimer.onclick = function() {
+        li.remove();
+    };
+
+    li.appendChild(btnSupprimer);
     listeUl.appendChild(li);
 }
