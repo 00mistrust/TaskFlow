@@ -66,10 +66,11 @@
             <i class="bi bi-folder me-1"></i>Projets
           </a>
         </li>
-          <li class="nav-item">
-            <a class="nav-link" href="members.html">
-              <i class="bi bi-people me-1"></i>Membres
-            </a>
+        <li class="nav-item">
+          <a class="nav-link" href="members.html">
+            <i class="bi bi-people me-1"></i>Membres
+          </a>
+        </li>
         <li class="nav-item">
           <a class="nav-link active" href="tasks.html">
             <i class="bi bi-check2-square me-1"></i>Tâches
@@ -77,6 +78,11 @@
         </li>
       </ul>
       <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item me-3">
+          <a class="nav-link" href="activities.html" title="Historique des activités">
+            <i class="bi bi-clock-history fs-5"></i>
+          </a>
+        </li>
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="#">
             <i class="bi bi-bell-fill fs-5"></i>
@@ -99,6 +105,7 @@
   </nav>
 
   <div class="container mt-5">
+<<<<<<< HEAD
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2 style="color: #3c3489;"><i class="bi bi-check2-square me-2"></i>Gestion des tâches</h2>
@@ -108,6 +115,14 @@
     </button>
   </div>
 </div>
+=======
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 style="color: #3c3489;"><strong>Gestion des tâches</strong></h2>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+        <i class="bi bi-plus-lg me-1"></i>Nouvelle tâche
+      </button>
+    </div>
+>>>>>>> ca0cc2d11d8ded4116d601315979680bc0f7449f
 
     <div class="filter-section mb-4">
       <div class="row g-3 align-items-end">
@@ -165,7 +180,6 @@
     </div>
 
     <div id="pagination" class="d-flex justify-content-center align-items-center gap-3 mt-4"></div>
-
   </div>
 
   <!-- Add Task Modal -->
@@ -203,6 +217,12 @@
               <option value="à faire">À faire</option>
               <option value="en cours">En cours</option>
               <option value="terminé">Terminé</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Assigner à</label>
+            <select class="form-select" id="taskAssignedTo">
+              <option value="">-- Non assigné --</option>
             </select>
           </div>
           <div id="formError" class="alert alert-danger d-none"></div>
@@ -288,7 +308,6 @@
 
     const params = new URLSearchParams(window.location.search);
     const PROJECT_ID = params.get('id') || null;
-
     const DRAFT_KEY = 'draft_' + (PROJECT_ID || 'default');
 
     async function loadTasks(page = 1) {
@@ -342,6 +361,7 @@
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
         const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const assignedName = task.assignedTo ? `<small class="text-muted"><i class="bi bi-person-check me-1"></i>${task.assignedTo.name || task.assignedTo.email}</small>` : `<small class="text-muted"><i class="bi bi-person me-1"></i>Non assigné</small>`;
         return `
           <div class="col-md-6 col-lg-4">
             <div class="card task-card shadow-sm h-100">
@@ -351,13 +371,20 @@
                   <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
                 </div>
                 ${descriptionText}
-                <span class="badge ${statusClass} text-white mb-3">${task.status}</span>
-                <div class="d-flex gap-2 mt-3">
+                <span class="badge ${statusClass} text-white mb-2">${task.status}</span>
+                <div class="mb-3">${assignedName}</div>
+                <div class="d-flex gap-2 mt-3 flex-wrap">
                   <select class="form-select form-select-sm" onchange="updateStatus('${task._id}', this.value)">
                     <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
                     <option value="en cours" ${task.status === 'en cours' ? 'selected' : ''}>En cours</option>
                     <option value="terminé" ${task.status === 'terminé' ? 'selected' : ''}>Terminé</option>
                   </select>
+                  <select class="form-select form-select-sm" id="assign-${task._id}">
+                    <option value="">Assigner à...</option>
+                  </select>
+                  <button class="btn btn-outline-success btn-sm" onclick="assignTask('${task._id}')" title="Assigner">
+                    <i class="bi bi-person-check"></i>
+                  </button>
                   <button class="btn btn-outline-primary btn-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')">
                     <i class="bi bi-pencil"></i>
                   </button>
@@ -369,6 +396,9 @@
             </div>
           </div>`;
       }).join('');
+
+      // Remplir les dropdowns d'assignation après rendu
+      loadMembersForAssign();
     }
 
     function renderPagination(page, totalPages) {
@@ -389,26 +419,30 @@
       const priority = document.getElementById('taskPriority').value;
       const status = document.getElementById('taskStatus').value;
       const description = document.getElementById('taskDescription').value;
+      const assignedTo = document.getElementById('taskAssignedTo').value;
       const errorDiv = document.getElementById('formError');
 
       if (!title || !priority || !status) {
-        errorDiv.textContent = 'Veuillez remplir tous les champs.';
+        errorDiv.textContent = 'Veuillez remplir tous les champs obligatoires.';
         errorDiv.classList.remove('d-none');
         return;
       }
       errorDiv.classList.add('d-none');
 
       try {
-        await axios.post(BASE_URL, {
-          title, description, priority, status,
-          project: PROJECT_ID || '507f1f77bcf86cd799439011'
-        }, { headers: { Authorization: `Bearer ${token}` } });
+        const body = { title, description, priority, status, project: PROJECT_ID || '507f1f77bcf86cd799439011' };
+        if (assignedTo) body.assignedTo = assignedTo;
+
+        await axios.post(BASE_URL, body, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
         bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
         document.getElementById('taskStatus').value = '';
+        document.getElementById('taskAssignedTo').value = '';
         localStorage.removeItem(DRAFT_KEY);
         loadTasks(currentPage);
       } catch (err) {
@@ -464,6 +498,20 @@
       } catch (err) { alert('Erreur lors de la mise à jour.'); }
     }
 
+    async function assignTask(taskId) {
+      const select = document.getElementById(`assign-${taskId}`);
+      const assignedTo = select.value;
+      if (!assignedTo) return alert('Veuillez choisir un membre.');
+      try {
+        await axios.patch(`${BASE_URL}/${taskId}/assign`, { assignedTo }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        loadTasks(currentPage);
+      } catch (err) {
+        alert('Erreur lors de l\'assignation.');
+      }
+    }
+
     async function deleteTask(id) {
       if (!confirm('Supprimer cette tâche ?')) return;
       try {
@@ -483,23 +531,48 @@
       loadTasks(1);
     }
 
+    let membersCache = [];
+
     async function loadMembers() {
       if (!PROJECT_ID) return;
       try {
         const res = await axios.get(`http://localhost:5000/api/projects/${PROJECT_ID}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const select = document.getElementById('filterMember');
-        const members = res.data.members || [];
-        members.forEach(member => {
+        membersCache = res.data.members || [];
+
+        // Remplir filterMember
+        const filterSelect = document.getElementById('filterMember');
+        membersCache.forEach(member => {
+          const option = document.createElement('option');
+          option.value = member._id;
+          option.textContent = member.name || member.email;
+          filterSelect.appendChild(option);
+        });
+
+        // Remplir taskAssignedTo dans le modal
+        const assignSelect = document.getElementById('taskAssignedTo');
+        membersCache.forEach(member => {
+          const option = document.createElement('option');
+          option.value = member._id;
+          option.textContent = member.name || member.email;
+          assignSelect.appendChild(option);
+        });
+      } catch (err) {
+        console.log('Membres non disponibles pour linstant');
+      }
+    }
+
+    function loadMembersForAssign() {
+      if (!membersCache.length) return;
+      membersCache.forEach(member => {
+        document.querySelectorAll('[id^="assign-"]').forEach(select => {
           const option = document.createElement('option');
           option.value = member._id;
           option.textContent = member.name || member.email;
           select.appendChild(option);
         });
-      } catch (err) {
-        console.log('Membres non disponibles pour linstant');
-      }
+      });
     }
 
     ['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
