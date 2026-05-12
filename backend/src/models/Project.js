@@ -20,7 +20,7 @@ const projectSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-// الـ Middleware ديال الحذف المتسلسل (Cascade Delete)
+
 projectSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
   const Task = mongoose.model('Task');
   await Task.deleteMany({ project: this._id });
