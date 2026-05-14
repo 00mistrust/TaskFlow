@@ -22,3 +22,4 @@ build/
 # Dossier de données (si vous en avez un)
 data/
 postman/
+.postman
