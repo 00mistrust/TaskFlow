@@ -1,19 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const Project = require('../models/Project');
-const authMiddleware = require('../middleware/auth'); // تأكد من المسار ديال الميدل وير
+const authMiddleware = require('../middleware/auth'); 
 
 
 router.use(authMiddleware);
 
-//GET: جلب المشاريع ديال المستخدم مع Pagination
+
 router.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const projects = await Project.find({ owner: req.user.id }) // كنقلبو غير على مشاريع هاد المستخدم
+        const projects = await Project.find({ owner: req.user.id })  
             .skip(skip)
             .limit(limit);
 
@@ -30,7 +30,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST: صاوب مشروع جديد
+// POST 
 router.post('/', async (req, res) => {
     try {
         const { title, description, deadline } = req.body;
@@ -38,7 +38,7 @@ router.post('/', async (req, res) => {
             title,
             description,
             deadline,
-            owner: req.user.id // هاد الـ ID كيجي من الـ Middleware
+            owner: req.user.id 
         });
 
         await newProject.save();
@@ -48,11 +48,11 @@ router.post('/', async (req, res) => {
     }
 });
 
-// PUT: عدل مشروع
+// PUT 
 router.put('/:id', async (req, res) => {
     try {
         const project = await Project.findOneAndUpdate(
-            { _id: req.params.id, owner: req.user.id }, // كنتاكدو باللي هو مولاه
+            { _id: req.params.id, owner: req.user.id },  
             req.body,
             { new: true }
         );
@@ -67,13 +67,13 @@ router.delete('/:id/members/:userId', async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
         if (!project) return res.status(404).json({ error: 'Project not found' });
+  
 
-        // التحقق من الملكية (Restriction)
         if (project.owner.toString() !== req.user.id) {
             return res.status(403).json({ error: 'Only the owner can modify project members' });
         }
 
-        // كنفلترو لاليست ونحيدو العضو المطلوب
+
         project.members = project.members.filter(m => m.toString() !== req.params.userId);
         await project.save();
 
@@ -83,7 +83,7 @@ router.delete('/:id/members/:userId', async (req, res) => {
     }
 });
 
-// POST: إضافة عضو للمشروع
+//post 
 router.post('/:id/members', async (req, res) => {
     try {
         const { userId } = req.body; // الـ ID ديال الشخص اللي باغة تزيديه
@@ -96,12 +96,11 @@ router.post('/:id/members', async (req, res) => {
             return res.status(403).json({ error: 'Seul le propriétaire peut modifier les membres' });
         }
         
-        // التحقق: واش الشخص ديجا كاين؟
         if (project.members.includes(userId)) {
             return res.status(400).json({ error: 'User is already a member' });
         }
 
-        // إضافة العضو
+        
         project.members.push(userId);
         await project.save();
 
