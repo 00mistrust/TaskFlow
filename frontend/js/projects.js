@@ -1,18 +1,10 @@
 const form = document.getElementById('projectForm');
-<<<<<<< HEAD
-const listeUl = document.getElementById('listeProjets');
-=======
 const listeUl = document.getElementById('listeProjets'); 
->>>>>>> 19068f3c503162adbf4812a87794df2f0ab10e95
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-<<<<<<< HEAD
-    const token = localStorage.getItem('token');
-=======
     // inputs
->>>>>>> 19068f3c503162adbf4812a87794df2f0ab10e95
     const title = document.getElementById('title').value;
     const description = document.getElementById('description').value;
     const deadline = document.getElementById('deadline').value;
@@ -30,31 +22,6 @@ form.addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-<<<<<<< HEAD
-            const li = document.createElement('li');
-            li.className = "list-group-item d-flex justify-content-between align-items-center mb-2 shadow-sm";
-
-            const span = document.createElement('span');
-            span.innerHTML = `<strong class="text-primary">${title}</strong>`; 
-            li.appendChild(span);
-
-            const btnSupprimer = document.createElement('button');
-            btnSupprimer.textContent = "Supprimer";
-            btnSupprimer.className = "btn btn-light border btn-sm";
-            
-            btnSupprimer.onclick = function() {
-                li.remove();
-            };
-
-            li.appendChild(btnSupprimer);
-            listeUl.appendChild(li);
-            form.reset();
-        }
-    } catch (error) {
-        console.log("Erreur serveur !");
-    }
-});
-=======
             
             ajouterProjetALaVue(title, description, deadline);
             
@@ -100,4 +67,3 @@ function ajouterProjetALaVue(title, desc, date) {
     li.appendChild(btnSupprimer);
     listeUl.appendChild(li);
 }
->>>>>>> 19068f3c503162adbf4812a87794df2f0ab10e95
