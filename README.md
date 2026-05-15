@@ -1,13 +1,18 @@
 TaskFlow - Collaborative Project Management
 
-L'équipe :
+#L'équipe :
 Marwane Taouil - Project Manager & Developer ;@MR12006 
+
 Marwa El Ouaai - Developer ;@00mistrust
+
 Lina ABAICH - Developer  ;@abaichlina
+
 Salsabil ADIM- Developer ; @salsabiladim
+
 Samir TOUIMI BENJELLOUN -Developer ;@dream21edit-star
 
- Feature Distribution
+
+#Feature Distribution
 Marwane: F1- authentification et F5 - dashboard
 Marwa: F3 -gestion des taches et f6 -filtrage,recherche,pagination
 Lina: F4- assignation des tachees et F9- historique 
@@ -20,7 +25,7 @@ Samir : F7- sauvegarde des brouillons et F10 - notifications
 git clone https://github.com/MR12006/TaskFlow.git
 cd TaskFlow
 
-# 2. Creer .env file in backend/ avec these values:
+# 2. Creer .env file in backend/ avec ces valeurs:
 MONGO_URI=mongodb://mongo:27017/taskflow
 JWT_SECRET=supersecretkey
 PORT=5000
