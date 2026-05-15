@@ -21,7 +21,10 @@ exports.login = async (req, res) => {
     const valid = await bcrypt.compare(motDePasse, user.motDePasse);
     if (!valid) return res.status(401).json({ error: 'Mot de passe incorrect' });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token });
+    res.json({ 
+      token: token, 
+      nom: user.nom
+     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
