@@ -1,3 +1,4 @@
+const token = localStorage.getItem('token');
 const form = document.getElementById('projectForm');
 const listeUl = document.getElementById('listeProjets'); 
 
@@ -12,7 +13,7 @@ form.addEventListener('submit', async (e) => {
     if (title.trim() === "") return;
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/projects', {
+        const response = await fetch('http://localhost:5000/api/projects',  {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
