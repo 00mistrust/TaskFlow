@@ -18,3 +18,27 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     alert('Erreur lors de la création du compte !');
   }
 });
+
+document.getElementById('password').addEventListener('input', (e) => {
+  const password = e.target.value;
+  const strengthText = document.getElementById('passwordStrength');
+  
+
+  if (password.length === 0) {
+    strengthText.textContent = '';
+    return;
+  }
+
+  if (password.length <= 4) {
+    strengthText.textContent = 'Faible ';
+    strengthText.style.color = '#dc3545'; 
+  } 
+  else if (password.length > 4 && password.length <= 8) {
+    strengthText.textContent = 'Moyen ';
+    strengthText.style.color = '#ffc107'; 
+  } 
+  else {
+    strengthText.textContent = 'Fort ';
+    strengthText.style.color = '#198754'; 
+  }
+});
