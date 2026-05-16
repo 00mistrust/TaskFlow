@@ -15,10 +15,16 @@ const form = document.getElementById('projectForm');
 const editForm = document.getElementById('editProjectForm');
 let bsEditModal = null;
 
+// Gestion des états de pagination locale
+let pageMesProjets = 1;
+let pageProjetsPartages = 1;
+const LIMIT_PAR_PAGE = 3; // Nombre maximum de projets affichés par page simultanément
+
 // 2. CHARGEMENT AU DÉMARRAGE
 document.addEventListener('DOMContentLoaded', () => {
     chargerLesProjets();
-    // Initialisation de l'instance du modal Bootstrap
+    
+    // Initialisation du modal Bootstrap d'édition
     const modalEl = document.getElementById('editProjectModal');
     if (modalEl) {
         bsEditModal = new bootstrap.Modal(modalEl);
@@ -27,43 +33,113 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function chargerLesProjets() {
     try {
-        const response = await fetch('http://localhost:5000/api/projects', {
+        // Envoi des query params de pagination à ton API REST comme demandé par le sujet
+        const response = await fetch(`http://localhost:5000/api/projects?limit=100`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
             const result = await response.json();
-            const projects = result.data || result || [].reverse();
             
-            // On vide les deux colonnes
-            document.getElementById('mesProjetsList').innerHTML = '';
-            document.getElementById('projetsPartagesList').innerHTML = '';
+            // Extraction sécurisée du tableau de projets
+            let rawProjects = [];
+            if (Array.isArray(result)) rawProjects = result;
+            else if (result.data && Array.isArray(result.data)) rawProjects = result.data;
+            else if (result.projects && Array.isArray(result.projects)) rawProjects = result.projects;
+
+            // Tri par ID décroissant ou date de création pour s'assurer que le plus récent est TOUJOURS en haut
+            rawProjects.sort((a, b) => {
+                const idA = a._id || a.id || '';
+                const idB = b._id || b.id || '';
+                return idB.localeCompare(idA);
+            });
             
-            projects.forEach(project => {
+            // On sépare d'abord tous les projets par type
+            const mesProjetsGlobaux = [];
+            const projetsPartagesGlobaux = [];
+
+            rawProjects.forEach(project => {
                 const ownerId = project.owner ? (project.owner._id || project.owner) : null;
-                const ownerName = project.owner ? (project.owner.name || project.owner.nom || 'Quelqu\'un') : 'Inconnu';
-                
-                // Si je suis le créateur -> Colonne de gauche
                 if (String(ownerId) === String(MON_ID)) {
-                    ajouterProjetALaVue('mesProjetsList', project, true, ownerName);
-                } 
-                // Si je suis invité -> Colonne de droite
-                else {
-                    ajouterProjetALaVue('projetsPartagesList', project, false, ownerName);
+                    mesProjetsGlobaux.push(project);
+                } else {
+                    projetsPartagesGlobaux.push(project);
                 }
             });
+
+            // Rendu de la colonne "Mes Projets" avec sa pagination dédiée
+            afficherColonnePaginee('mesProjetsList', 'mesProjetsPagination', mesProjetsGlobaux, pageMesProjets, true);
+            
+            // Rendu de la colonne "Projets Assignés" avec sa pagination dédiée
+            afficherColonnePaginee('projetsPartagesList', 'projetsPartagesPagination', projetsPartagesGlobaux, pageProjetsPartages, false);
         }
     } catch (error) {
         console.error("Erreur lors du chargement des projets :", error);
     }
 }
 
+// Fonction de découpage et de rendu des projets paginés
+function afficherColonnePaginee(containerId, paginationId, itemsArray, currentPage, isOwner) {
+    const container = document.getElementById(containerId);
+    const paginationContainer = document.getElementById(paginationId);
+    if (!container || !paginationContainer) return;
+
+    container.innerHTML = '';
+    paginationContainer.innerHTML = '';
+
+    const totalItems = itemsArray.length;
+    const totalPages = Math.ceil(totalItems / LIMIT_PAR_PAGE) || 1;
+
+    // Protection si la page courante dépasse suite à une suppression
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+        if (isOwner) pageMesProjets = totalPages; else pageProjetsPartages = totalPages;
+    }
+
+    // Extraction des éléments de la page actuelle
+    const indexDebut = (currentPage - 1) * LIMIT_PAR_PAGE;
+    const indexFin = indexDebut + LIMIT_PAR_PAGE;
+    const itemsPage = itemsArray.slice(indexDebut, indexFin);
+
+    if (itemsPage.length === 0) {
+        container.innerHTML = `<p class="text-muted small text-center my-4">Aucun projet à afficher.</p>`;
+        return;
+    }
+
+    // Injection des cartes projets
+    itemsPage.forEach(project => {
+        const ownerName = project.owner ? (project.owner.name || project.owner.nom || 'Quelqu\'un') : 'Inconnu';
+        ajouterProjetALaVue(containerId, project, isOwner, ownerName);
+    });
+
+    // Rendu de la barre de navigation de pagination (Précédent / Indicateur / Suivant)
+    paginationContainer.innerHTML = `
+        <button class="btn btn-light btn-sm border fw-semibold px-3" ${currentPage === 1 ? 'disabled' : ''} 
+            onclick="changerPageColonne(${isOwner}, ${currentPage - 1})">
+            <i class="bi bi-arrow-left me-1"></i> Précédent
+        </button>
+        <span class="text-muted small fw-medium">Page ${currentPage} sur ${totalPages}</span>
+        <button class="btn btn-light btn-sm border fw-semibold px-3" ${currentPage === totalPages ? 'disabled' : ''} 
+            onclick="changerPageColonne(${isOwner}, ${currentPage + 1})">
+            Suivant <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+    `;
+}
+
+// Action de changement de page globale appelée par les boutons
+window.changerPageColonne = function(isOwner, nouvellePage) {
+    if (isOwner) {
+        pageMesProjets = nouvellePage;
+    } else {
+        pageProjetsPartages = nouvellePage;
+    }
+    chargerLesProjets();
+};
+
 // 3. CRÉATION D'UN PROJET
 form.addEventListener('submit', async (e) => {
     e.preventDefault(); 
-    console.log("🚀 Bouton cliqué ! Début de la création...");
-
     const title = document.getElementById('title').value;
     const description = document.getElementById('description').value;
     const deadline = document.getElementById('deadline').value;
@@ -82,6 +158,7 @@ form.addEventListener('submit', async (e) => {
 
         if (response.ok) {
             form.reset(); 
+            pageMesProjets = 1; // Renvoie l'utilisateur à la première page pour voir sa création immédiatement
             chargerLesProjets(); 
         } else {
             const errorData = await response.json();
@@ -98,12 +175,13 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
     if (!container) return;
 
     const div = document.createElement('div');
-    div.className = "card shadow-sm border-0 mb-1"; 
+    div.className = "card shadow-sm border mt-1"; 
+    div.style.borderRadius = "12px";
+    div.style.backgroundColor = "#ffffff";
     
     const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
-    const assigneParText = !isOwner ? `<div class="mb-1"><small class="text-muted"><i class="bi bi-person-fill"></i> Assigné par : <strong>${ownerName}</strong></small></div>` : '';
+    const assigneParText = !isOwner ? `<div class="mb-1"><small class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-person-fill"></i> Assigné par : <strong class="text-dark">${ownerName}</strong></small></div>` : '';
 
-    // Boutons d'administration condensés si propriétaire
     let gestionButtonsHTML = '';
     if (isOwner) {
         const cleanDesc = (project.description || '').replace(/"/g, '&quot;');
@@ -111,15 +189,15 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
         const rawDate = project.deadline ? project.deadline.split('T')[0] : '';
 
         gestionButtonsHTML = `
-            <div class="row g-1 mt-2">
+            <div class="row g-2 mt-1 pt-2 border-top" style="border-color: #f3f4f6 !important;">
                 <div class="col-6">
-                    <button class="btn btn-outline-secondary btn-xs py-1 px-2 w-100 style-sm small" style="font-size: 0.75rem;"
+                    <button class="btn btn-outline-secondary btn-sm py-1 px-2 w-100 fw-semibold" style="font-size: 0.75rem; border-radius: 6px;"
                         onclick="ouvrirModalModification('${project._id}', '${cleanTitle}', '${cleanDesc}', '${rawDate}')">
                         <i class="bi bi-pencil"></i> Modifier
                     </button>
                 </div>
                 <div class="col-6">
-                    <button class="btn btn-outline-danger btn-xs py-1 px-2 w-100 small" style="font-size: 0.75rem;"
+                    <button class="btn btn-outline-danger btn-sm py-1 px-2 w-100 fw-semibold" style="font-size: 0.75rem; border-radius: 6px;"
                         onclick="supprimerProjet('${project._id}', this)">
                         <i class="bi bi-trash"></i> Supprimer
                     </button>
@@ -128,19 +206,18 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
         `;
     }
 
-    // p-3 réduit le padding de la carte pour économiser beaucoup d'espace horizontal/vertical
     div.innerHTML = `
         <div class="card-body p-3">
-            <h5 class="card-title text-primary fw-bold mb-1 h6">${project.title}</h5>
+            <h5 class="card-title text-dark fw-bold mb-1 h6" style="letter-spacing: -0.3px;">${project.title}</h5>
             ${assigneParText}
-            <p class="card-text text-muted mb-2 small" style="line-height: 1.3;">${project.description || 'Pas de description'}</p>
-            <p class="card-text mb-2"><small class="text-secondary" style="font-size: 0.75rem;"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</small></p>
+            <p class="card-text text-muted mb-2 small" style="line-height: 1.4; font-size: 0.8rem">${project.description || 'Pas de description'}</p>
+            <div class="mb-3"><span class="badge bg-light text-secondary border py-1 px-2" style="font-size: 0.7rem; border-radius: 6px;"><i class="bi bi-calendar-event me-1"></i>Délai : ${dateAffichee}</span></div>
             
             <div class="d-flex gap-2">
-                <a href="tasks.html?id=${project._id}" class="btn btn-primary btn-sm py-1 px-2 flex-grow-1 small" style="font-size: 0.8rem;">
+                <a href="tasks.html?id=${project._id}" class="btn text-white btn-sm py-1 px-2 flex-grow-1 fw-semibold" style="font-size: 0.75rem; background-color: #3c3489; border-radius: 6px;">
                     <i class="bi bi-list-task"></i> Tâches
                 </a>
-                <a href="members.html?id=${project._id}" class="btn btn-secondary btn-sm py-1 px-2 flex-grow-1 small" style="font-size: 0.8rem;">
+                <a href="members.html?id=${project._id}" class="btn btn-light btn-sm py-1 px-2 flex-grow-1 fw-semibold border" style="font-size: 0.75rem; border-radius: 6px; color: #4b5563;">
                     <i class="bi bi-people"></i> Membres
                 </a>
             </div>
@@ -150,6 +227,7 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
 
     container.appendChild(div);
 }
+
 // 5. SUPPRIMER UN PROJET
 window.supprimerProjet = async function(id, btnElement) {
     if (!confirm("Voulez-vous vraiment supprimer ce projet ?")) return;
@@ -161,8 +239,7 @@ window.supprimerProjet = async function(id, btnElement) {
         });
 
         if (response.ok) {
-            const cardItem = btnElement.closest('.card'); 
-            if (cardItem) cardItem.remove();
+            chargerLesProjets(); // Recharge la vue globale pour recalculer la pagination instantanément
         } else {
             alert("Erreur ou permission refusée pour supprimer ce projet.");
         }
@@ -171,7 +248,7 @@ window.supprimerProjet = async function(id, btnElement) {
     }
 };
 
-// 6. MODIFIER UN PROJET (GESTION INTERFACE ET FORMULAIRE)
+// 6. MODIFIER UN PROJET
 window.ouvrirModalModification = function(id, title, description, deadline) {
     document.getElementById('editProjectId').value = id;
     document.getElementById('editTitle').value = title;
@@ -191,7 +268,7 @@ editForm.addEventListener('submit', async (e) => {
 
     try {
         const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
-            method: 'PUT', // Route REST d'édition du projet
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
@@ -201,7 +278,7 @@ editForm.addEventListener('submit', async (e) => {
 
         if (response.ok) {
             if (bsEditModal) bsEditModal.hide();
-            chargerLesProjets(); // Recharge la vue à jour
+            chargerLesProjets(); 
         } else {
             const errData = await response.json();
             alert("Erreur de mise à jour: " + (errData.error || errData.message || "Serveur bloqué"));
