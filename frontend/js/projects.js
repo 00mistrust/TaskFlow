@@ -1,5 +1,22 @@
-// Afficher les projets dès le chargement de la page
-document.addEventListener('DOMContentLoaded', async () => {
+// 1. INITIALISATION
+const token = localStorage.getItem('token');
+if (!token) window.location.href = 'login.html';
+
+// Récupération de ton ID depuis le token
+let MON_ID = null;
+try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    MON_ID = payload.id || payload._id || payload.userId;
+} catch (e) {
+    console.error("Erreur de lecture du token");
+}
+
+const form = document.getElementById('projectForm');
+
+// 2. CHARGEMENT AU DÉMARRAGE
+document.addEventListener('DOMContentLoaded', chargerLesProjets);
+
+async function chargerLesProjets() {
     try {
         const response = await fetch('http://localhost:5000/api/projects', {
             method: 'GET',
@@ -8,33 +25,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (response.ok) {
             const result = await response.json();
-            const projects = result.data || [];
+            const projects = result.data || result || [];
             
-            // On vide la liste avant de la remplir pour éviter les doublons
-            listeUl.innerHTML = ''; 
+            // On vide les deux colonnes
+            document.getElementById('mesProjetsList').innerHTML = '';
+            document.getElementById('projetsPartagesList').innerHTML = '';
             
             projects.forEach(project => {
-                ajouterProjetALaVue(project._id, project.title, project.description, project.deadline);
+                const ownerId = project.owner ? (project.owner._id || project.owner) : null;
+                const ownerName = project.owner ? (project.owner.name || project.owner.nom || 'Quelqu\'un') : 'Inconnu';
+                
+                // Si je suis le créateur -> Colonne de gauche
+                if (ownerId === MON_ID) {
+                    ajouterProjetALaVue('mesProjetsList', project, true, ownerName);
+                } 
+                // Si je suis invité -> Colonne de droite
+                else {
+                    ajouterProjetALaVue('projetsPartagesList', project, false, ownerName);
+                }
             });
         }
     } catch (error) {
         console.error("Erreur lors du chargement des projets :", error);
     }
-});
-const token = localStorage.getItem('token');
-const form = document.getElementById('projectForm');
-const listeUl = document.getElementById('listeProjets'); 
+}
 
-// 1. GESTION DE LA SOUMISSION DU FORMULAIRE
+// 3. CRÉATION D'UN PROJET
+// 3. CRÉATION D'UN PROJET
 form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Empêche la page de se rafraîchir
+    console.log("🚀 Bouton cliqué ! Début de la création...");
 
-    // Récupération des inputs
     const title = document.getElementById('title').value;
     const description = document.getElementById('description').value;
     const deadline = document.getElementById('deadline').value;
 
-    if (title.trim() === "") return;
+    console.log("📝 Données lues :", { title, description, deadline });
+
+    if (title.trim() === "") {
+        console.log("❌ Le titre est vide, annulation.");
+        return;
+    }
 
     try {
         const response = await fetch('http://localhost:5000/api/projects',  {
@@ -46,76 +77,78 @@ form.addEventListener('submit', async (e) => {
             body: JSON.stringify({ title, description, deadline })
         });
 
+        console.log("🌐 Statut de la réponse du serveur :", response.status);
+
         if (response.ok) {
-            // MAGIE ICI : On extrait la réponse JSON du backend pour récupérer le VRAI _id généré !
-            const newProject = await response.json(); 
-            
-            // On envoie le vrai _id, et les autres infos à la fonction d'affichage
-            ajouterProjetALaVue(newProject._id, newProject.title, newProject.description, newProject.deadline);
-            
+            const data = await response.json();
+            console.log("✅ Projet enregistré avec succès :", data);
             form.reset(); 
+            chargerLesProjets(); // On rafraîchit la liste
         } else {
-            alert("Erreur lors de la création du projet.");
+            const errorData = await response.json();
+            console.error("❌ Le backend a refusé :", errorData);
+            alert("Erreur lors de la création : " + (errorData.error || errorData.message || "inconnue"));
         }
     } catch (error) {
-        console.log("Le backend n'a pas répondu, ajout manuel pour tester visuellement.");
-        // Pour les tests sans backend : on génère un faux ID pour que les boutons marchent quand même
-        ajouterProjetALaVue('id-temporaire', title, description, deadline);
-        
+        console.error("❌ Erreur fatale (réseau ou code) :", error);
     }
 });
+// 4. DESSINER LE PROJET À L'ÉCRAN
+function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-// 2. FONCTION POUR DESSINER LE PROJET À L'ÉCRAN
-function ajouterProjetALaVue(id, title, desc, date) {
-    const li = document.createElement('li');
-    li.className = "list-group-item d-flex justify-content-between align-items-center mb-2 shadow-sm p-3";
+    const div = document.createElement('div');
+    div.className = "card shadow-sm border-0"; 
+    
+    // Formatage de la date
+    const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
+    
+    // Message "Assigné par..." visible uniquement pour les invités
+    const assigneParText = !isOwner ? `<small class="text-muted"><i class="bi bi-person-fill"></i> Assigné par : <strong>${ownerName}</strong></small><br>` : '';
 
-    // Formatage de la date (pour faire plus propre)
-    const dateAffichee = date ? new Date(date).toLocaleDateString() : 'Non défini';
+    // Bouton supprimer visible uniquement pour le propriétaire
+    const btnDelete = isOwner 
+        ? `<button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="supprimerProjet('${project._id}', this)"><i class="bi bi-trash"></i> Supprimer le projet</button>`
+        : '';
 
-    li.innerHTML = `
-        <div style="display: flex; flex-grow: 1; align-items: center; gap: 30px;">
-            <div style="min-width: 150px;">
-                <strong>Nom projet :</strong> <span class="text-primary">${title}</span>
+    div.innerHTML = `
+        <div class="card-body">
+            <h5 class="card-title text-primary fw-bold">${project.title}</h5>
+            ${assigneParText}
+            <p class="card-text text-muted mb-2">${project.description || 'Pas de description'}</p>
+            <p class="card-text mb-3"><small class="text-secondary"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</small></p>
+            
+            <div class="d-flex gap-2">
+                <a href="tasks.html?id=${project._id}" class="btn btn-primary btn-sm flex-grow-1">
+                    <i class="bi bi-list-task"></i> Tâches
+                </a>
+                <a href="members.html?id=${project._id}" class="btn btn-secondary btn-sm flex-grow-1">
+                    <i class="bi bi-people"></i> Membres
+                </a>
             </div>
-            <div style="min-width: 250px; flex-grow: 1;">
-                <strong>Description :</strong> <span class="text-muted">${desc || '---'}</span>
-            </div>
-            <div style="min-width: 180px;">
-                <strong>Delay :</strong> <span>${dateAffichee}</span>
-            </div>
-        </div>
-        <div>
-            <a href="tasks.html?id=${id}" class="btn btn-outline-primary btn-sm ms-2">
-                <i class="bi bi-list-task"></i> Tâches
-            </a>
-            <a href="members.html?id=${id}" class="btn btn-outline-secondary btn-sm ms-2">
-                <i class="bi bi-people"></i> Membres
-            </a>
-            <button class="btn btn-outline-danger btn-sm ms-2" onclick="supprimerProjet('${id}', this)">
-                <i class="bi bi-trash"></i>
-            </button>
+            ${btnDelete}
         </div>
     `;
 
-    listeUl.appendChild(li);
+    container.appendChild(div);
 }
 
-// 3. FONCTION POUR SUPPRIMER UN PROJET (Bouton Poubelle)
+// 5. SUPPRIMER UN PROJET
 window.supprimerProjet = async function(id, btnElement) {
     if (!confirm("Voulez-vous vraiment supprimer ce projet ?")) return;
 
     try {
-        // Envoi de la requête de suppression au backend
         const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        // Même si on a pas encore codé la route DELETE backend, on le supprime de l'écran pour l'utilisateur
-        const liItem = btnElement.closest('li'); 
-        if (liItem) {
-            liItem.remove();
+        if (response.ok) {
+            const cardItem = btnElement.closest('.card'); 
+            if (cardItem) cardItem.remove();
+        } else {
+            alert("Erreur ou permission refusée pour supprimer ce projet.");
         }
     } catch (err) {
         console.error("Erreur de suppression:", err);

@@ -38,3 +38,13 @@ h1 {
   color: white !important;
   font-weight: 500;
 }
+/* Forcer le texte en blanc UNIQUEMENT pour les boutons Tâches (primary) et Membres (secondary) */
+.card-body .btn-primary,
+.card-body .btn-secondary {
+    color: #ffffff !important;
+}
+
+.card-body .btn-primary:hover,
+.card-body .btn-secondary:hover {
+    color: #ffffff !important;
+}

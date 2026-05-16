@@ -9,18 +9,18 @@ exports.getAllProjects = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // La magie est ici : On cherche les projets où on est soit owner, soit dans le tableau members !
+        //  On cherche les projets où on est soit owner, soit dans le tableau members 
         const condition = {
             $or: [
                 { owner: req.user.id },
                 { members: req.user.id }
             ]
         };
-
         const projects = await Project.find(condition)  
-            .skip(skip)
-            .limit(limit);
-
+    .populate('owner', 'nom name email') 
+    .populate('members', 'nom name email')
+    .skip(skip)
+    .limit(limit);
         const total = await Project.countDocuments(condition);
 
         res.json({
@@ -123,6 +123,24 @@ exports.removeMember = async (req, res) => {
         await project.save();
 
         res.json({ message: 'Member removed successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+// Supprimer un projet
+exports.deleteProject = async (req, res) => {
+    try {
+        // On cherche le projet par son ID ET on s'assure que celui qui supprime est bien le propriétaire
+        const project = await Project.findOneAndDelete({ 
+            _id: req.params.id, 
+            owner: req.user.id 
+        });
+
+        if (!project) {
+            return res.status(404).json({ error: 'Projet non trouvé ou vous n\'êtes pas autorisé à le supprimer' });
+        }
+
+        res.json({ message: 'Projet supprimé avec succès' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
