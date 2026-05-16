@@ -1,3 +1,4 @@
+// js/tasks.js
 const BASE_URL = 'http://localhost:5000/api/tasks';
 const token = localStorage.getItem('token');
 let currentPage = 1;
@@ -5,7 +6,7 @@ let currentPage = 1;
 if (!token) window.location.href = 'login.html';
 
 const user = JSON.parse(localStorage.getItem('user') || '{}');
-if (user.name) document.getElementById('userName').textContent = user.name;
+if (user.name || user.nom) document.getElementById('userName').textContent = user.name || user.nom;
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.removeItem('token');
@@ -13,18 +14,17 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
     window.location.href = 'login.html';
 });
 
-
 // VARIABLES DE VUES ET PROJET ACTUEL
-
+// Add this line where your other DOM variables (vueProjets, vueTaches, etc.) are declared:
+const btnNouvelleTache = document.querySelector('[data-bs-target="#addTaskModal"]');
 const vueProjets = document.getElementById('vueProjets');
 const vueTaches = document.getElementById('vueTaches');
 const grilleProjets = document.getElementById('grilleProjets');
 const btnRetourProjets = document.getElementById('btnRetourProjets');
 const titreProjetActuel = document.getElementById('titreProjetActuel');
 
-// C'est cette variable qui remplace ton ancien PROJECT_ID dans l'URL !
 let projetActuelId = null; 
-
+let projetActuelData = null; // Stores owner information to manage roles dynamically
 
 // GESTION DES VUES (PROJETS)
 async function chargerProjetsPourTaches() {
@@ -35,12 +35,13 @@ async function chargerProjetsPourTaches() {
         
         if (response.ok) {
             const result = await response.json();
+            // Fallback strategy to find the data list depending on backend payload structure
             const projects = result.data || result || [];
             
             grilleProjets.innerHTML = '';
             
             if (projects.length === 0) {
-                grilleProjets.innerHTML = '<div class="col-12 text-center text-muted">Aucun projet trouvé. Créez-en un d\'abord !</div>';
+                grilleProjets.innerHTML = '<div class="col-12 text-center text-muted">Aucun projet trouvé. Créez-en un ou attendez d\'être invité !</div>';
                 return;
             }
 
@@ -76,22 +77,23 @@ function ouvrirVueTaches(projectId, projectTitle) {
     vueProjets.classList.add('d-none');
     vueTaches.classList.remove('d-none');
 
-    // On lance le chargement des tâches ET des membres pour CE projet 
-    loadTasks(1);
-    loadMembers();
+    // First load members (and find project owner), then look up the tasks
+    loadMembers().then(() => {
+        loadTasks(1);
+    });
 }
 
 btnRetourProjets.addEventListener('click', () => {
     projetActuelId = null; 
+    projetActuelData = null;
     vueTaches.classList.add('d-none');
     vueProjets.classList.remove('d-none');
 });
 
 
 // GESTION DES TÂCHES
-
 async function loadTasks(page = 1) {
-    if (!projetActuelId) return; // On ne charge pas si aucun projet n'est sélectionné
+    if (!projetActuelId) return; 
 
     try {
         const search = document.getElementById('searchInput').value;
@@ -107,16 +109,21 @@ async function loadTasks(page = 1) {
         if (priority) query.append('priority', priority);
         if (member) query.append('assignedTo', member);
 
-        // On utilise projetActuelId pour filtrer l'URL !
         const url = `${BASE_URL}/project/${projetActuelId}?${query}`;
 
         const res = await axios.get(url, {
             headers: { Authorization: `Bearer ${token}` }
         });
 
-        renderTasks(res.data.data);
-        renderPagination(res.data.page, res.data.totalPages);
-        currentPage = res.data.page;
+        // Fixed Data parsing bug (handles root array fallback or object wrap cleanly)
+        const rawTasks = res.data.data || (Array.isArray(res.data) ? res.data : []);
+        
+        renderTasks(rawTasks);
+        
+        const currentP = res.data.page || page;
+        const totalP = res.data.totalPages || 1;
+        renderPagination(currentP, totalP);
+        currentPage = currentP;
     } catch (err) {
         if (err.response?.status === 401) window.location.href = 'login.html';
         document.getElementById('taskList').innerHTML = `
@@ -138,40 +145,46 @@ function renderTasks(tasks) {
         return;
     }
 
-    // 1. Récupérer l'ID de l'utilisateur connecté
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const currentUserId = currentUser._id || currentUser.id;
+    // 1. EXTRACT LOGGED-IN USER FROM TOKEN (Guarantees matching formats)
+    let currentUserId = null;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUserId = String(payload.id || payload._id || payload.userId || '').trim();
+    } catch (e) {
+        console.error("Erreur de lecture du token dans renderTasks", e);
+    }
+
+    // 2. EXTRACT PROJECT OWNER ID
+    let projectOwnerId = '';
+    if (projetActuelData && projetActuelData.owner) {
+        if (typeof projetActuelData.owner === 'object') {
+            projectOwnerId = projetActuelData.owner._id || projetActuelData.owner.id || '';
+        } else {
+            projectOwnerId = projetActuelData.owner;
+        }
+    }
+    projectOwnerId = String(projectOwnerId).trim();
+
+    // Final ownership evaluation
+    const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
 
     list.innerHTML = tasks.map(task => {
-        console.log("Inspectons la tâche :", task);
         const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
         const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
-// 2. RECHERCHE DE L'EMAIL DU MEMBRE ASSIGNÉ
         let assignedEmail = null;
         let assigneeId = null;
 
         if (task.assignedTo) {
-            // Si le backend envoie un objet (ex: { _id: "...", email: "a@a.com" })
             if (typeof task.assignedTo === 'object' && task.assignedTo !== null) {
                 assigneeId = task.assignedTo._id || task.assignedTo.id;
-                assignedEmail = task.assignedTo.email || task.assignedTo.name;
-            } 
-            // Si le backend envoie juste une chaîne de caractères (l'ID)
-            else {
+                assignedEmail = task.assignedTo.email || task.assignedTo.name || task.assignedTo.nom;
+            } else {
                 assigneeId = task.assignedTo;
             }
 
-            // LE CORRECTIF EST ICI : 
-            // Si la personne assignée est l'utilisateur actuellement connecté, 
-            // on pioche son email directement dans le localStorage !
-            if (assigneeId === currentUserId && currentUser.email) {
-                assignedEmail = currentUser.email;
-            }
-
-            // Fallback : on essaie quand même de chercher dans le select (au cas où c'est assigné à un AUTRE membre)
             if (!assignedEmail) {
                 const selectMembres = document.getElementById('taskAssignedTo');
                 if (selectMembres) {
@@ -182,14 +195,13 @@ function renderTasks(tasks) {
                 }
             }
             
-            // Si on a vraiment un ID mais qu'on n'a pas pu trouver l'email
             if (!assignedEmail && assigneeId) {
-                assignedEmail = "Membre assigné (Email masqué)"; 
+                assignedEmail = "Membre assigné"; 
             }
         }
 
-        // Création de l'affichage de l'email
-        const assignedNameHTML = assignedEmail 
+        // TEXT DISPLAY FOR ASSIGNED USER
+        let assignedNameHTML = assignedEmail 
             ? `<div class="d-flex align-items-center mt-3 pt-3 border-top">
                  <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
                    <i class="bi bi-envelope-at-fill text-primary"></i>
@@ -203,15 +215,22 @@ function renderTasks(tasks) {
                  <i class="bi bi-person-x me-2 fs-5"></i> Non assigné
                </div>`;
 
-        // 3. GESTION DES PERMISSIONS
-        const isAssignedToMe = (assigneeId === currentUserId);
-        const isAdmin = (task.createdBy === currentUserId);
-        
-        // A-t-il le droit d'éditer la tâche entière ? (Oui s'il est admin, ou s'il n'est PAS assigné à ça)
-        // (Si le prof veut que la personne assignée ne puisse QUE changer le statut, canEditFull doit être faux pour lui)
-        const canEditFull = isAdmin || !isAssignedToMe; 
+        // OWNER ONLY: Add inline re-assignment selector menu
+        if (isProjectOwner) {
+            assignedNameHTML += `
+                <div class="mt-2">
+                    <select id="assign-${task._id}" class="form-select form-select-sm shadow-sm" onchange="assignTask('${task._id}')">
+                        <option value="">-- Réassigner la tâche --</option>
+                        ${membersCache.map(member => `
+                            <option value="${member._id || member.id}" ${String(assigneeId) === String(member._id || member.id) ? 'selected' : ''}>
+                                ${member.email || member.name || member.nom}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>`;
+        }
 
-        // Menu déroulant du statut (tout le monde le voit)
+        // STATUS DROPDOWN (Visible to everyone)
         let actionButtons = `
             <select class="form-select form-select-sm w-auto shadow-sm" style="min-width: 110px;" onchange="updateStatus('${task._id}', this.value)">
                 <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
@@ -220,8 +239,8 @@ function renderTasks(tasks) {
             </select>
         `;
 
-        // Boutons Modifier/Supprimer (Cachés pour la personne assignée)
-        if (canEditFull) {
+        // --- FIXED LAYER: ONLY THE OWNER SEES THE EDIT AND DELETE BUTTONS ---
+        if (isProjectOwner) {
             actionButtons += `
                 <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')" title="Modifier">
                     <i class="bi bi-pencil"></i>
@@ -275,6 +294,7 @@ async function addTask() {
     const description = document.getElementById('taskDescription').value;
     const assignedTo = document.getElementById('taskAssignedTo').value;
     const errorDiv = document.getElementById('formError');
+    
     if (!title || !priority || !status) {
         errorDiv.textContent = 'Veuillez remplir tous les champs obligatoires.';
         errorDiv.classList.remove('d-none');
@@ -283,7 +303,6 @@ async function addTask() {
     errorDiv.classList.add('d-none');
 
     try {
-        // On utilise le VRAI projetActuelId ici
         const body = { title, description, priority, status, project: projetActuelId };
         if (assignedTo) body.assignedTo = assignedTo;
 
@@ -298,8 +317,7 @@ async function addTask() {
         document.getElementById('taskStatus').value = '';
         document.getElementById('taskAssignedTo').value = '';
         
-        const draftKey = 'draft_' + projetActuelId;
-        localStorage.removeItem(draftKey);
+        localStorage.removeItem('draft_' + projetActuelId);
         loadTasks(currentPage);
     } catch (err) {
         errorDiv.textContent = err.response?.data?.error || 'Erreur lors de l\'ajout.';
@@ -351,20 +369,8 @@ async function updateStatus(id, status) {
             headers: { Authorization: `Bearer ${token}` }
         });
         loadTasks(currentPage);
-    } catch (err) { alert('Erreur lors de la mise à jour.'); }
-}
-
-async function assignTask(taskId) {
-    const select = document.getElementById(`assign-${taskId}`);
-    const assignedTo = select.value;
-    if (!assignedTo) return alert('Veuillez choisir un membre.');
-    try {
-        await axios.patch(`${BASE_URL}/${taskId}/assign`, { assignedTo }, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        loadTasks(currentPage);
-    } catch (err) {
-        alert('Erreur lors de l\'assignation.');
+    } catch (err) { 
+        alert(err.response?.data?.error || 'Erreur lors de la mise à jour.'); 
     }
 }
 
@@ -375,7 +381,9 @@ async function deleteTask(id) {
             headers: { Authorization: `Bearer ${token}` }
         });
         loadTasks(currentPage);
-    } catch (err) { alert('Erreur lors de la suppression.'); }
+    } catch (err) { 
+        alert(err.response?.data?.error || 'Erreur lors de la suppression.'); 
+    }
 }
 
 function applyFilters() { loadTasks(1); }
@@ -396,45 +404,66 @@ async function loadMembers() {
             headers: { Authorization: `Bearer ${token}` }
         });
         
-        // 1. On isole bien le projet
-        const project = res.data.data || res.data;
-        
-        // 2. On récupère les membres DE CE PROJET
-        membersCache = project.members || [];
+        projetActuelData = res.data.data || res.data;
+        membersCache = projetActuelData.members || [];
 
+        // 1. MATCH THE IDENTITY SYSTEM FROM PROJECTS.JS EXACTLY
+        let currentUserId = null;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            currentUserId = String(payload.id || payload._id || payload.userId || '').trim();
+        } catch (e) {
+            console.error("Erreur de lecture du token dans tasks.js", e);
+        }
+        
+        // Extract the owner's ID whether populated as an object or a flat ID string
+        let projectOwnerId = '';
+        if (projetActuelData && projetActuelData.owner) {
+            if (typeof projetActuelData.owner === 'object') {
+                projectOwnerId = projetActuelData.owner._id || projetActuelData.owner.id || '';
+            } else {
+                projectOwnerId = projetActuelData.owner;
+            }
+        }
+        projectOwnerId = String(projectOwnerId).trim();
+
+        // Debug prints to verify consistency in browser dev console (F12)
+        console.log("ID utilisateur connecté (Token) :", currentUserId);
+        console.log("ID Propriétaire du projet (Backend) :", projectOwnerId);
+
+        // Perform evaluation logic
+        const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
+
+        // 2. TOGGLE "NOUVELLE TÂCHE" BUTTON DISPLAY VISIBILITY
+        if (btnNouvelleTache) {
+            if (isProjectOwner) {
+                console.log("👉 Résultat : Propriétaire détecté. Bouton affiché.");
+                btnNouvelleTache.classList.remove('d-none'); // Show it
+            } else {
+                console.log("👉 Résultat : Membre invité détecté. Bouton masqué.");
+                btnNouvelleTache.classList.add('d-none');    // Hide it
+            }
+        }
+
+        // 3. RE-POPULATE FILTER SELECTORS & FORM INPUTS (Completely Untouched)
         const filterSelect = document.getElementById('filterMember');
         if (filterSelect) filterSelect.innerHTML = '<option value="">Tous les membres</option>';
         
         const assignSelect = document.getElementById('taskAssignedTo');
-        if (assignSelect) assignSelect.innerHTML = '<option value="">Sélectionner un membre</option>';
+        if (assignSelect) assignSelect.innerHTML = '<option value="">-- Non assigné --</option>';
 
-        // 3. On remplit le menu déroulant exigé par le professeur
         membersCache.forEach(member => {
             const option = document.createElement('option');
-            option.value = member._id; 
-            option.textContent = member.name || member.email;
+            option.value = member._id || member.id; 
+            option.textContent = member.email || member.name || member.nom;
             
             if (filterSelect) filterSelect.appendChild(option.cloneNode(true));
             if (assignSelect) assignSelect.appendChild(option);
         });
     } catch (err) {
-        console.log('Membres non disponibles pour l\'instant', err);
+        console.error('Erreur de chargement des membres dans loadMembers:', err);
     }
 }
-
-function loadMembersForAssign() {
-    if (!membersCache.length) return;
-    document.querySelectorAll('[id^="assign-"]').forEach(select => {
-        select.innerHTML = '<option value="">Assigner à...</option>'; // Reset
-        membersCache.forEach(member => {
-            const option = document.createElement('option');
-            option.value = member._id;
-            option.textContent = member.name || member.email;
-            select.appendChild(option);
-        });
-    });
-}
-
 // Brouillons dynamiques par projet
 ['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
     const el = document.getElementById(id);

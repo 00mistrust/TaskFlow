@@ -1,109 +1,140 @@
 const Task = require('../models/task');
 const { logActivity } = require('./activityController'); 
 
+// GET /project/:projectId
 exports.getTasksByProject = async (req, res) => {
   try {
-    // Le paramètre peut venir de l'URL (/project/:id) ou être global
-    const projectId = req.params.projectId || req.params.id; 
-    
-    // Pagination
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 6;
-    const skip = (page - 1) * limit;
+    const projectId = req.params.projectId || req.query.project;
+    if (!projectId) return res.status(400).json({ error: "ID de projet requis" });
 
-    // Construction du filtre Mongoose conditionnel
-    let filter = {};
-    if (projectId) filter.project = projectId;
-    
-    // Filtres exacts
-    if (req.query.status) filter.status = req.query.status;
-    if (req.query.priority) filter.priority = req.query.priority;
-    if (req.query.assignedTo) filter.assignedTo = req.query.assignedTo;
+    const TaskModel = mongoose.model('task');
+    const tasks = await TaskModel.find({ project: projectId })
+      .populate('assignedTo', 'nom email'); // Selects exclusively name and email attributes!
 
-    // (Regex)
-    if (req.query.search) {
-      filter.$or = [
-        { title: { $regex: req.query.search, $options: 'i' } },
-        { description: { $regex: req.query.search, $options: 'i' } }
-      ];
-    }
-
-    // Récupération des données
-    const tasks = await Task.find(filter)
-      .populate('assignedTo', 'name email') 
-      .sort({ priority: -1, dueDate: 1 })
-      .skip(skip)
-      .limit(limit);
-
-    // Comptage total pour la pagination
-    const total = await Task.countDocuments(filter);
-
-    // Reponse au format exact attendu par frontend
-    res.json({
-      data: tasks,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.json(tasks);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
 // créer une tâche
-// créer une tâche
+const mongoose = require('mongoose');
+const Project = require('../models/Project'); // Adjust path to your Project model
+const TaskModel = mongoose.model('task');     // Using your exact case-sensitive lowercase name
+
+// 1. POST / (Create a task)
+// Inside controllers/taskController.js -> createTask method
 exports.createTask = async (req, res) => {
   try {
-    // 1. Sécurité : si le frontend envoie une chaîne vide pour "Non assigné", on l'enlève
-    if (!req.body.assignedTo || req.body.assignedTo.trim() === "") {
-        req.body.assignedTo = null;
+    const { title, description, priority, status, dueDate, project: projectId, assignedTo } = req.body;
+    const userId = req.user.id;
+
+    const Project = require('../models/Project');
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ error: "Projet non trouvé" });
+
+    // Only creator creates tasks
+    if (project.owner.toString() !== userId) {
+      return res.status(403).json({ error: "Seul le créateur du projet peut ajouter des tâches." });
     }
 
-    const task = new Task(req.body);
+    const TaskModel = mongoose.model('task');
+    const task = new TaskModel({
+      title,
+      description,
+      priority,
+      status,
+      dueDate,
+      project: projectId,
+      assignedTo: assignedTo || null
+    });
     await task.save();
 
-    // 2. 💡 NOUVEAU : On "populate" la tâche avant de la renvoyer au frontend !
-    // Comme ça, le frontend a tout de suite accès à task.assignedTo.email
-    await task.populate('assignedTo', 'name email');
+    // AUTOMATIC ASSIGNMENT PIPELINE
+    if (assignedTo && assignedTo !== project.owner.toString()) {
+      const memberIdStr = assignedTo.toString();
+      const currentMembers = project.members.map(m => m.toString());
 
-    await logActivity('task_created', task.project, req.user.id, `A créé la tâche "${task.title}"`);
+      if (!currentMembers.includes(memberIdStr)) {
+        project.members.push(assignedTo);
+        await project.save(); // Saved automatically to project schema array!
+      }
+    }
 
     res.status(201).json(task);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-// PUT modifier une tâche entière
+// 2. PUT /:id (Full Task Update)
 exports.updateTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    ).populate('assignedTo', 'name email');
-    if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
-    res.json(task);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+    const taskId = req.params.id;
+    const userId = req.user.id;
+
+    const task = await TaskModel.findById(taskId);
+    if (!task) return res.status(404).json({ error: "Tâche non trouvée" });
+
+    const project = await Project.findById(task.project);
+    if (!project) return res.status(404).json({ error: "Projet parent non trouvé" });
+
+    // Restriction: Only the project owner can perform full structural updates/assignments
+    if (project.owner.toString() !== userId) {
+      return res.status(403).json({ 
+        error: "Interdit. En tant que membre assigné, vous devez utiliser la route PATCH pour modifier uniquement le statut." 
+      });
+    }
+
+    const updatedTask = await TaskModel.findByIdAndUpdate(taskId, req.body, { new: true });
+
+    // Maintain the automatic project assignment on updates if the owner reassigns it to someone new
+    if (req.body.assignedTo) {
+      if (!project.members.includes(req.body.assignedTo) && project.owner.toString() !== req.body.assignedTo) {
+        project.members.push(req.body.assignedTo);
+        await project.save();
+      }
+    }
+
+    res.json(updatedTask);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-// mettre à jour uniquement le statut 
+// 3. PATCH /:id/status (Status Update Only)
 exports.updateTaskStatus = async (req, res) => {
   try {
+    const taskId = req.params.id;
+    const userId = req.user.id;
     const { status } = req.body;
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    ).populate('assignedTo', 'name email');
-    if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
-    
-    //  les membres puissent changer le statut
-    res.json(task);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+
+    // Strict validation of the status enum from your task schema
+    if (!['à faire', 'en cours', 'terminé'].includes(status)) {
+      return res.status(400).json({ error: "Statut invalide" });
+    }
+
+    const task = await TaskModel.findById(taskId);
+    if (!task) return res.status(404).json({ error: "Tâche non trouvée" });
+
+    const project = await Project.findById(task.project);
+    if (!project) return res.status(404).json({ error: "Projet parent non trouvé" });
+
+    // Authorization rule check: Are they the project owner OR explicitly the assigned teammate?
+    const isOwner = project.owner.toString() === userId;
+    const isAssigned = task.assignedTo && task.assignedTo.toString() === userId;
+
+    if (!isOwner && !isAssigned) {
+      return res.status(403).json({ error: "Accès refusé. Vous n'êtes pas autorisé à modifier cette tâche." });
+    }
+
+    // Both are allowed to perform this change
+    task.status = status;
+    await task.save();
+
+    res.json({ message: "Statut mis à jour", task });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
