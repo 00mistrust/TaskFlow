@@ -516,7 +516,7 @@ async function loadMembers() {
         });
         
         projetActuelData = res.data.data || res.data;
-        membersCache = projetActuelData.members || [];
+        window.membersCache = projetActuelData.members || [];
 
         // 1. MATCH THE IDENTITY SYSTEM FROM PROJECTS.JS EXACTLY
         let currentUserId = null;
@@ -622,8 +622,36 @@ async function pollNotifications() {
         console.log('Notifications non disponibles');
     }
 }
+// FUNCTION POUR REASSIGNER UNE TÂCHE (APPELÉE PAR LE DROPDOWN ONCHANGE)
+async function assignTask(taskId) {
+    const selectElement = document.getElementById(`assign-${taskId}`);
+    if (!selectElement) return;
 
+    const newAssigneeId = selectElement.value;
+
+    try {
+        // Envoi de la requête PATCH au backend avec la valeur sélectionnée
+        const response = await axios.patch(
+            `${BASE_URL}/${taskId}/assign`, 
+            { assignedTo: newAssigneeId || null }, 
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.status === 200) {
+            alert("Tâche réassignée avec succès !");
+            loadTasks(currentPage); // Recharge la liste des tâches pour mettre l'affichage à jour
+        }
+    } catch (err) {
+        console.error("Erreur lors de la réassignation :", err);
+        alert(err.response?.data?.error || "Erreur lors de la réassignation de la tâche.");
+        loadTasks(currentPage); // Annule le changement visuel si le backend refuse
+    }
+}
 // DÉMARRAGE DE LA PAGE
 pollNotifications();
 setInterval(pollNotifications, 30000);
+
+// REMOVED: chargerProjetsPourTaches(); (It is already handled inside document.addEventListener('DOMContentLoaded') up top!)
+// Rendre la fonction accessible globalement pour les attributs HTML 'onclick' / 'onchange'
+window.assignTask = assignTask;
 chargerProjetsPourTaches();
