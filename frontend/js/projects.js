@@ -12,9 +12,18 @@ try {
 }
 
 const form = document.getElementById('projectForm');
+const editForm = document.getElementById('editProjectForm');
+let bsEditModal = null;
 
 // 2. CHARGEMENT AU DÉMARRAGE
-document.addEventListener('DOMContentLoaded', chargerLesProjets);
+document.addEventListener('DOMContentLoaded', () => {
+    chargerLesProjets();
+    // Initialisation de l'instance du modal Bootstrap
+    const modalEl = document.getElementById('editProjectModal');
+    if (modalEl) {
+        bsEditModal = new bootstrap.Modal(modalEl);
+    }
+});
 
 async function chargerLesProjets() {
     try {
@@ -36,7 +45,7 @@ async function chargerLesProjets() {
                 const ownerName = project.owner ? (project.owner.name || project.owner.nom || 'Quelqu\'un') : 'Inconnu';
                 
                 // Si je suis le créateur -> Colonne de gauche
-                if (ownerId === MON_ID) {
+                if (String(ownerId) === String(MON_ID)) {
                     ajouterProjetALaVue('mesProjetsList', project, true, ownerName);
                 } 
                 // Si je suis invité -> Colonne de droite
@@ -51,21 +60,15 @@ async function chargerLesProjets() {
 }
 
 // 3. CRÉATION D'UN PROJET
-// 3. CRÉATION D'UN PROJET
 form.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Empêche la page de se rafraîchir
+    e.preventDefault(); 
     console.log("🚀 Bouton cliqué ! Début de la création...");
 
     const title = document.getElementById('title').value;
     const description = document.getElementById('description').value;
     const deadline = document.getElementById('deadline').value;
 
-    console.log("📝 Données lues :", { title, description, deadline });
-
-    if (title.trim() === "") {
-        console.log("❌ Le titre est vide, annulation.");
-        return;
-    }
+    if (title.trim() === "") return;
 
     try {
         const response = await fetch('http://localhost:5000/api/projects',  {
@@ -77,44 +80,58 @@ form.addEventListener('submit', async (e) => {
             body: JSON.stringify({ title, description, deadline })
         });
 
-        console.log("🌐 Statut de la réponse du serveur :", response.status);
-
         if (response.ok) {
-            const data = await response.json();
-            console.log("✅ Projet enregistré avec succès :", data);
             form.reset(); 
-            chargerLesProjets(); // On rafraîchit la liste
+            chargerLesProjets(); 
         } else {
             const errorData = await response.json();
-            console.error("❌ Le backend a refusé :", errorData);
             alert("Erreur lors de la création : " + (errorData.error || errorData.message || "inconnue"));
         }
     } catch (error) {
-        console.error("❌ Erreur fatale (réseau ou code) :", error);
+        console.error("❌ Erreur fatale :", error);
     }
 });
+
 // 4. DESSINER LE PROJET À L'ÉCRAN
 function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     const div = document.createElement('div');
-    div.className = "card shadow-sm border-0"; 
+    div.className = "card shadow-sm border-0 mb-1"; 
     
-    // Formatage de la date
     const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
-    
-    // Message "Assigné par..." visible uniquement pour les invités
     const assigneParText = !isOwner ? `<small class="text-muted"><i class="bi bi-person-fill"></i> Assigné par : <strong>${ownerName}</strong></small><br>` : '';
 
-    // Bouton supprimer visible uniquement pour le propriétaire
-    const btnDelete = isOwner 
-        ? `<button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="supprimerProjet('${project._id}', this)"><i class="bi bi-trash"></i> Supprimer le projet</button>`
-        : '';
+    // Boutons de modification et suppression combinés de manière fluide pour le propriétaire
+    let gestionButtonsHTML = '';
+    if (isOwner) {
+        // Encodage optionnel pour éviter les crashs si la description contient des guillemets doubles
+        const cleanDesc = (project.description || '').replace(/"/g, '&quot;');
+        const cleanTitle = (project.title || '').replace(/"/g, '&quot;');
+        const rawDate = project.deadline ? project.deadline.split('T')[0] : '';
+
+        gestionButtonsHTML = `
+            <div class="row g-2 mt-1">
+                <div class="col-6">
+                    <button class="btn btn-outline-secondary btn-sm w-100" 
+                        onclick="ouvrirModalModification('${project._id}', '${cleanTitle}', '${cleanDesc}', '${rawDate}')">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </button>
+                </div>
+                <div class="col-6">
+                    <button class="btn btn-outline-danger btn-sm w-100" 
+                        onclick="supprimerProjet('${project._id}', this)">
+                        <i class="bi bi-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        `;
+    }
 
     div.innerHTML = `
         <div class="card-body">
-            <h5 class="card-title text-primary fw-bold">${project.title}</h5>
+            <h5 class="card-title text-primary fw-bold mb-1">${project.title}</h5>
             ${assigneParText}
             <p class="card-text text-muted mb-2">${project.description || 'Pas de description'}</p>
             <p class="card-text mb-3"><small class="text-secondary"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</small></p>
@@ -127,7 +144,7 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
                     <i class="bi bi-people"></i> Membres
                 </a>
             </div>
-            ${btnDelete}
+            ${gestionButtonsHTML}
         </div>
     `;
 
@@ -154,3 +171,43 @@ window.supprimerProjet = async function(id, btnElement) {
         console.error("Erreur de suppression:", err);
     }
 };
+
+// 6. MODIFIER UN PROJET (GESTION INTERFACE ET FORMULAIRE)
+window.ouvrirModalModification = function(id, title, description, deadline) {
+    document.getElementById('editProjectId').value = id;
+    document.getElementById('editTitle').value = title;
+    document.getElementById('editDescription').value = description;
+    document.getElementById('editDeadline').value = deadline;
+    
+    if (bsEditModal) bsEditModal.show();
+};
+
+editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('editProjectId').value;
+    const title = document.getElementById('editTitle').value;
+    const description = document.getElementById('editDescription').value;
+    const deadline = document.getElementById('editDeadline').value;
+
+    try {
+        const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
+            method: 'PUT', // Route REST d'édition du projet
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ title, description, deadline })
+        });
+
+        if (response.ok) {
+            if (bsEditModal) bsEditModal.hide();
+            chargerLesProjets(); // Recharge la vue à jour
+        } else {
+            const errData = await response.json();
+            alert("Erreur de mise à jour: " + (errData.error || errData.message || "Serveur bloqué"));
+        }
+    } catch (err) {
+        console.error("Erreur de modification du projet:", err);
+    }
+});
