@@ -11,6 +11,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     });
 
     localStorage.setItem('token', response.data.token);
+    localStorage.setItem('userName', response.data.nom);
     window.location.href = 'dashboard.html';
   } catch (err) {
     alert('Email ou mot de passe incorrect !');
