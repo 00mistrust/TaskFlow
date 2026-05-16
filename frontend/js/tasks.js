@@ -16,6 +16,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 
 // VARIABLES DE VUES ET PROJET ACTUEL
 // Add this line where your other DOM variables (vueProjets, vueTaches, etc.) are declared:
+// VARIABLES DE VUES ET PROJET ACTUEL
 const btnNouvelleTache = document.querySelector('[data-bs-target="#addTaskModal"]');
 const vueProjets = document.getElementById('vueProjets');
 const vueTaches = document.getElementById('vueTaches');
@@ -24,49 +25,108 @@ const btnRetourProjets = document.getElementById('btnRetourProjets');
 const titreProjetActuel = document.getElementById('titreProjetActuel');
 
 let projetActuelId = null; 
-let projetActuelData = null; // Stores owner information to manage roles dynamically
+let projetActuelData = null; 
 
+if (btnRetourProjets) {
+    btnRetourProjets.addEventListener('click', () => {
+        projetActuelId = null; 
+        projetActuelData = null;
+        vueTaches.classList.add('d-none');
+        vueProjets.classList.remove('d-none');
+        chargerProjetsPourTaches(); // Actualise les deux colonnes
+    });
+}
 // GESTION DES VUES (PROJETS)
+// Lancer le chargement au démarrage de la page tasks.html
+document.addEventListener('DOMContentLoaded', () => {
+    chargerProjetsPourTaches();
+});
+
 async function chargerProjetsPourTaches() {
+    if (!grilleProjets) return;
+
+    // 1. Extraction propre de l'ID utilisateur connecté depuis le Token
+    let currentUserId = null;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUserId = String(payload.id || payload._id || payload.userId || '').trim();
+    } catch (e) {
+        console.error("Erreur de lecture du token dans tasks.js", e);
+    }
+
     try {
         const response = await fetch('http://localhost:5000/api/projects', {
+            method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (response.ok) {
             const result = await response.json();
-            // Fallback strategy to find the data list depending on backend payload structure
             const projects = result.data || result || [];
-            
-            grilleProjets.innerHTML = '';
-            
-            if (projects.length === 0) {
-                grilleProjets.innerHTML = '<div class="col-12 text-center text-muted">Aucun projet trouvé. Créez-en un ou attendez d\'être invité !</div>';
-                return;
-            }
+
+            // Sélection des deux conteneurs (Gauche et Droite)
+            const gaucheContainer = document.getElementById('grilleProjets'); // Colonne de gauche
+            const droiteContainer = document.getElementById('mesTachesAssigneesList'); // Colonne de droite
+
+            // On vide les conteneurs avant de les remplir
+            gaucheContainer.innerHTML = '';
+            droiteContainer.innerHTML = '';
+
+            let hasOwned = false;
+            let hasAssigned = false;
 
             projects.forEach(project => {
-                const col = document.createElement('div');
-                col.className = 'col-md-4';
-                col.innerHTML = `
-                    <div class="card h-100 shadow-sm border-0" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-                        <div class="card-body text-center py-5">
-                            <i class="bi bi-folder-fill display-4 text-primary mb-3"></i>
-                            <h5 class="card-title fw-bold">${project.title}</h5>
-                            <p class="text-muted small">Cliquez pour gérer les tâches</p>
+                // Détermination de l'ID du propriétaire
+                let ownerId = '';
+                if (project.owner) {
+                    ownerId = typeof project.owner === 'object' ? (project.owner._id || project.owner.id) : project.owner;
+                }
+                ownerId = String(ownerId).trim();
+                
+                const ownerName = project.owner && typeof project.owner === 'object' 
+                    ? (project.owner.name || project.owner.nom || 'Quelqu\'un') 
+                    : 'Inconnu';
+
+                // Formatage de la date limite
+                const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
+
+                // Structure HTML d'une carte projet simplifiée pour l'onglet Tâches
+                const cardHTML = `
+                    <div class="card shadow-sm border-0 mb-3 task-card">
+                        <div class="card-body p-3">
+                            <h5 class="card-title text-primary fw-bold h6 mb-1">${project.title}</h5>
+                            ${ownerId !== currentUserId ? `<p class="mb-1 small text-muted"><i class="bi bi-person"></i> Par : ${ownerName}</p>` : ''}
+                            <p class="card-text text-muted small mb-2 text-truncate">${project.description || 'Pas de description'}</p>
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <span class="text-secondary style="font-size: 0.75rem;"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</span>
+                                <button class="btn btn-sm btn-primary px-3" onclick="ouvrirVueTaches('${project._id}', '${project.title.replace(/'/g, "\\'")}')">
+                                    <i class="bi bi-folder2-open me-1"></i> Gérer
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
-                
-                col.addEventListener('click', () => {
-                    ouvrirVueTaches(project._id, project.title);
-                });
-                
-                grilleProjets.appendChild(col);
+
+                // Condition magique : C'est le mien -> Gauche, Je suis invité -> Droite
+                if (currentUserId && ownerId && currentUserId === ownerId) {
+                    gaucheContainer.insertAdjacentHTML('beforeend', cardHTML);
+                    hasOwned = true;
+                } else {
+                    droiteContainer.insertAdjacentHTML('beforeend', cardHTML);
+                    hasAssigned = true;
+                }
             });
+
+            // Gérer les cas où une des colonnes est vide
+            if (!hasOwned) {
+                gaucheContainer.innerHTML = '<div class="text-muted small py-3 text-center">Vous n\'avez créé aucun projet.</div>';
+            }
+            if (!hasAssigned) {
+                droiteContainer.innerHTML = '<div class="text-muted small py-3 text-center">Aucun projet ne vous a été partagé.</div>';
+            }
         }
     } catch (error) {
-        console.error("Erreur chargement projets :", error);
+        console.error("Erreur lors du chargement des projets sur la page des tâches :", error);
     }
 }
 
@@ -83,12 +143,7 @@ function ouvrirVueTaches(projectId, projectTitle) {
     });
 }
 
-btnRetourProjets.addEventListener('click', () => {
-    projetActuelId = null; 
-    projetActuelData = null;
-    vueTaches.classList.add('d-none');
-    vueProjets.classList.remove('d-none');
-});
+
 
 
 // GESTION DES TÂCHES
@@ -124,28 +179,40 @@ async function loadTasks(page = 1) {
         const totalP = res.data.totalPages || 1;
         renderPagination(currentP, totalP);
         currentPage = currentP;
-    } catch (err) {
+} catch (err) {
         if (err.response?.status === 401) window.location.href = 'login.html';
-        document.getElementById('taskList').innerHTML = `
-            <div class="empty-state col-12">
-                <i class="bi bi-exclamation-circle fs-1 mb-3 d-block text-danger"></i>
-                <p>Erreur lors du chargement des tâches.</p>
-            </div>`;
+        
+        // On affiche l'erreur dans les NOUVELLES colonnes (car taskList n'existe plus)
+        const mesTachesList = document.getElementById('mesTachesList');
+        const autresTachesList = document.getElementById('autresTachesList');
+        
+        if (mesTachesList && autresTachesList) {
+            const errorHTML = `
+                <div class="empty-state col-12 bg-white rounded shadow-sm border border-danger">
+                    <i class="bi bi-exclamation-circle fs-3 mb-2 d-block text-danger"></i>
+                    <p class="small text-muted mb-0">Erreur de chargement des tâches.</p>
+                </div>`;
+            mesTachesList.innerHTML = errorHTML;
+            autresTachesList.innerHTML = errorHTML;
+        }
     }
 }
 
 function renderTasks(tasks) {
-    const list = document.getElementById('taskList');
+    const mesTachesList = document.getElementById('mesTachesList');
+    const autresTachesList = document.getElementById('autresTachesList');
+    
+    // Vider les listes avant de les remplir
+    mesTachesList.innerHTML = '';
+    autresTachesList.innerHTML = '';
+
     if (!tasks || tasks.length === 0) {
-        list.innerHTML = `
-            <div class="empty-state col-12">
-                <i class="bi bi-inbox fs-1 mb-3 d-block text-muted"></i>
-                <p>Aucune tâche trouvée pour ce projet.</p>
-            </div>`;
+        mesTachesList.innerHTML = `<div class="text-muted small p-3 text-center bg-white rounded shadow-sm">Aucune tâche assignée.</div>`;
+        autresTachesList.innerHTML = `<div class="text-muted small p-3 text-center bg-white rounded shadow-sm">Aucune autre tâche.</div>`;
         return;
     }
 
-    // 1. EXTRACT LOGGED-IN USER FROM TOKEN (Guarantees matching formats)
+    // 1. EXTRAIRE L'UTILISATEUR CONNECTÉ DEPUIS LE TOKEN
     let currentUserId = null;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -154,21 +221,21 @@ function renderTasks(tasks) {
         console.error("Erreur de lecture du token dans renderTasks", e);
     }
 
-    // 2. EXTRACT PROJECT OWNER ID
+    // 2. EXTRAIRE LE PROPRIÉTAIRE DU PROJET
     let projectOwnerId = '';
     if (projetActuelData && projetActuelData.owner) {
-        if (typeof projetActuelData.owner === 'object') {
-            projectOwnerId = projetActuelData.owner._id || projetActuelData.owner.id || '';
-        } else {
-            projectOwnerId = projetActuelData.owner;
-        }
+        projectOwnerId = typeof projetActuelData.owner === 'object' ? 
+            (projetActuelData.owner._id || projetActuelData.owner.id) : projetActuelData.owner;
     }
     projectOwnerId = String(projectOwnerId).trim();
 
-    // Final ownership evaluation
     const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
 
-    list.innerHTML = tasks.map(task => {
+    // Variables pour stocker le HTML des deux colonnes
+    let mesTachesHTML = '';
+    let autresTachesHTML = '';
+
+    tasks.forEach(task => {
         const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
@@ -189,18 +256,15 @@ function renderTasks(tasks) {
                 const selectMembres = document.getElementById('taskAssignedTo');
                 if (selectMembres) {
                     const option = Array.from(selectMembres.options).find(opt => opt.value === assigneeId);
-                    if (option && option.value !== "") {
-                        assignedEmail = option.text;
-                    }
+                    if (option && option.value !== "") assignedEmail = option.text;
                 }
             }
-            
-            if (!assignedEmail && assigneeId) {
-                assignedEmail = "Membre assigné"; 
-            }
+            if (!assignedEmail && assigneeId) assignedEmail = "Membre assigné"; 
         }
 
-        // TEXT DISPLAY FOR ASSIGNED USER
+        // VERIFICATION : Cette tâche est-elle à moi ?
+        const isAssignedToMe = (String(assigneeId) === currentUserId);
+
         let assignedNameHTML = assignedEmail 
             ? `<div class="d-flex align-items-center mt-3 pt-3 border-top">
                  <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
@@ -215,7 +279,6 @@ function renderTasks(tasks) {
                  <i class="bi bi-person-x me-2 fs-5"></i> Non assigné
                </div>`;
 
-        // OWNER ONLY: Add inline re-assignment selector menu
         if (isProjectOwner) {
             assignedNameHTML += `
                 <div class="mt-2">
@@ -230,7 +293,6 @@ function renderTasks(tasks) {
                 </div>`;
         }
 
-        // STATUS DROPDOWN (Visible to everyone)
         let actionButtons = `
             <select class="form-select form-select-sm w-auto shadow-sm" style="min-width: 110px;" onchange="updateStatus('${task._id}', this.value)">
                 <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
@@ -239,7 +301,6 @@ function renderTasks(tasks) {
             </select>
         `;
 
-        // --- FIXED LAYER: ONLY THE OWNER SEES THE EDIT AND DELETE BUTTONS ---
         if (isProjectOwner) {
             actionButtons += `
                 <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')" title="Modifier">
@@ -251,27 +312,37 @@ function renderTasks(tasks) {
             `;
         }
 
-        return `
-            <div class="col-md-6 col-lg-4">
-                <div class="card task-card shadow-sm h-100">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
-                            <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
-                        </div>
-                        ${descriptionText}
-                        <span class="badge ${statusClass} text-white mb-2 align-self-start">${task.status}</span>
-                        
-                        <div class="mt-auto">
-                            ${assignedNameHTML}
-                            <div class="d-flex gap-2 mt-3 align-items-center flex-wrap d-flex">
-                                ${actionButtons}
-                            </div>
+        // Structure HTML de la carte (largeur 100% car elle est déjà dans une demi-colonne)
+        const cardHTML = `
+            <div class="card task-card shadow-sm w-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
+                        <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
+                    </div>
+                    ${descriptionText}
+                    <span class="badge ${statusClass} text-white mb-2 align-self-start">${task.status}</span>
+                    
+                    <div class="mt-auto">
+                        ${assignedNameHTML}
+                        <div class="d-flex gap-2 mt-3 align-items-center flex-wrap d-flex">
+                            ${actionButtons}
                         </div>
                     </div>
                 </div>
             </div>`;
-    }).join('');
+
+        // TRIER : Si c'est à moi -> Colonne de Gauche, Sinon -> Colonne de Droite
+        if (isAssignedToMe) {
+            mesTachesHTML += cardHTML;
+        } else {
+            autresTachesHTML += cardHTML;
+        }
+    });
+
+    // Injection finale dans les colonnes avec un message de fallback si la colonne est vide
+    mesTachesList.innerHTML = mesTachesHTML || `<div class="text-muted small p-4 text-center bg-white rounded shadow-sm w-100 border">Aucune tâche ne vous est assignée pour l'instant.</div>`;
+    autresTachesList.innerHTML = autresTachesHTML || `<div class="text-muted small p-4 text-center bg-white rounded shadow-sm w-100 border">Aucune autre tâche dans ce projet.</div>`;
 }
 
 function renderPagination(page, totalPages) {
