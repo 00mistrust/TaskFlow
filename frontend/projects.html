@@ -7,8 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <title>TaskFlow - Mes Projets</title>
-
-    
 </head>
 <body>
 
@@ -69,7 +67,7 @@
   </div>
 </nav>
 
-<<div class="container-fluid px-md-5 mt-5 mb-5">
+<div class="container-fluid px-md-5 mt-5 mb-5">
     <div class="row mb-4 px-md-2">
         <div class="col-12">
             <div class="d-flex align-items-center">
@@ -92,7 +90,7 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-3">
                             <label class="form-label text-muted small fw-semibold mb-1">NOM DU PROJET</label>
-                            <input type="text" id="title" class="form-control bg-light border-0 py-2 small" style="border-radius: 8px;" placeholder="Ex: Refonte Site Web" required>
+                            <input type="text" id="title" class="form-control bg-light border-0 py-2 small" style="border-radius: 8px;" placeholder="ex:projet js" required>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label text-muted small fw-semibold mb-1">DATE LIMITE</label>
@@ -100,7 +98,7 @@
                         </div>
                         <div class="col-md-5">
                             <label class="form-label text-muted small fw-semibold mb-1">DESCRIPTION</label>
-                            <textarea id="description" class="form-control bg-light border-0 py-2 small" rows="1" style="border-radius: 8px; resize: none;" placeholder="Courte description..."></textarea>
+                            <textarea id="description" class="form-control bg-light border-0 py-2 small" rows="1" style="border-radius: 8px; resize: none;" placeholder="description..."></textarea>
                         </div>
                         <div class="col-md-2 d-grid">
                             <button type="submit" class="btn text-white py-2 shadow-sm fw-semibold" style="background-color: #3c3489; border-radius: 8px; font-size: 0.9rem;">
@@ -113,7 +111,7 @@
         </div>
     </div>
 
-<div class="row g-5">
+    <div class="row g-5">
         <div class="col-md-6">
             <div class="p-4 bg-white shadow-sm d-flex flex-column" style="border-radius: 16px; border: 1px solid #e5e7eb; min-height: 450px;">
                 <h3 class="text-primary pb-3 mb-4 h6 fw-bold border-bottom d-flex align-items-center" style="letter-spacing: 0.5px;">
@@ -138,8 +136,45 @@
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/projects.js"></script>
-    <script src="js/navbar.js"></script>
+</div>
+
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-labelledby="editProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="editProjectModalLabel" style="color: #1f2937;">Modifier le projet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editProjectForm">
+                <div class="modal-body py-3">
+                    <input type="hidden" id="editProjectId">
+
+                    <div class="mb-3">
+                        <label for="editTitle" class="form-label text-muted small fw-semibold mb-1">TITRE DU PROJET</label>
+                        <input type="text" id="editTitle" class="form-control bg-light border-0 py-2 small" style="border-radius: 8px;" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDeadline" class="form-label text-muted small fw-semibold mb-1">DATE LIMITE</label>
+                        <input type="date" id="editDeadline" class="form-control bg-light border-0 py-2 small" style="border-radius: 8px;">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDescription" class="form-label text-muted small fw-semibold mb-1">DESCRIPTION</label>
+                        <textarea id="editDescription" class="form-control bg-light border-0 py-2 small" rows="3" style="border-radius: 8px; resize: none;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal" style="border-radius: 6px;">Annuler</button>
+                    <button type="submit" class="btn text-white btn-sm px-3 fw-semibold" style="background-color: #3c3489; border-radius: 6px;">
+                        Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/projects.js"></script>
+<script src="js/navbar.js"></script>
 </body>
 </html>

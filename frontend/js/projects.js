@@ -170,6 +170,7 @@ form.addEventListener('submit', async (e) => {
 });
 
 // 4. DESSINER LE PROJET À L'ÉCRAN
+// 4. DESSINER LE PROJET À L'ÉCRAN (AVEC SÉCURITÉ STRICTE)
 function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -180,56 +181,90 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
     div.style.backgroundColor = "#ffffff";
     
     const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
-    const assigneParText = !isOwner ? `<div class="mb-1"><small class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-person-fill"></i> Assigné par : <strong class="text-dark">${ownerName}</strong></small></div>` : '';
+    const assigneParText = !isOwner ? `<div class="mb-2"><small class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-person-fill"></i> Assigné par : <strong class="text-dark">${ownerName}</strong></small></div>` : '';
 
-    let gestionButtonsHTML = '';
-    if (isOwner) {
-        const cleanDesc = (project.description || '').replace(/"/g, '&quot;');
-        const cleanTitle = (project.title || '').replace(/"/g, '&quot;');
-        const rawDate = project.deadline ? project.deadline.split('T')[0] : '';
-
-        gestionButtonsHTML = `
-            <div class="row g-2 mt-1 pt-2 border-top" style="border-color: #f3f4f6 !important;">
-                <div class="col-6">
-                    <button class="btn btn-outline-secondary btn-sm py-1 px-2 w-100 fw-semibold" style="font-size: 0.75rem; border-radius: 6px;"
-                        onclick="ouvrirModalModification('${project._id}', '${cleanTitle}', '${cleanDesc}', '${rawDate}')">
-                        <i class="bi bi-pencil"></i> Modifier
-                    </button>
-                </div>
-                <div class="col-6">
-                    <button class="btn btn-outline-danger btn-sm py-1 px-2 w-100 fw-semibold" style="font-size: 0.75rem; border-radius: 6px;"
-                        onclick="supprimerProjet('${project._id}', this)">
-                        <i class="bi bi-trash"></i> Supprimer
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
+    // Structure HTML de base de la carte
     div.innerHTML = `
-        <div class="card-body p-3">
-            <h5 class="card-title text-dark fw-bold mb-1 h6" style="letter-spacing: -0.3px;">${project.title}</h5>
-            ${assigneParText}
-            <p class="card-text text-muted mb-2 small" style="line-height: 1.4; font-size: 0.8rem">${project.description || 'Pas de description'}</p>
-            <div class="mb-3"><span class="badge bg-light text-secondary border py-1 px-2" style="font-size: 0.7rem; border-radius: 6px;"><i class="bi bi-calendar-event me-1"></i>Délai : ${dateAffichee}</span></div>
+        <div class="card-body p-3 d-flex flex-column justify-content-between" style="min-height: 160px;">
+            <div>
+                <h5 class="card-title text-dark fw-bold mb-1 h6" style="letter-spacing: -0.2px; font-size: 0.95rem;">${project.title}</h5>
+                ${assigneParText}
+                
+                <p class="card-text text-muted mb-2 small" style="line-height: 1.4; font-size: 0.8rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    ${project.description || 'Pas de description '}
+                </p>
+                
+                <div class="mb-3">
+                    <span class="badge bg-light text-secondary border py-1 px-2" style="font-size: 0.68rem; border-radius: 6px;">
+                        <i class="bi bi-calendar-event me-1"></i>Délai : ${dateAffichee}
+                    </span>
+                </div>
+            </div>
             
-            <div class="d-flex gap-2">
-                <a href="tasks.html?id=${project._id}" class="btn text-white btn-sm py-1 px-2 flex-grow-1 fw-semibold" style="font-size: 0.75rem; background-color: #3c3489; border-radius: 6px;">
-                    <i class="bi bi-list-task"></i> Tâches
+            <div class="d-flex gap-1 align-items-center mt-2 pt-2 border-top" style="border-color: #f3f4f6 !important;" id="actions-zone-${project._id}">
+                <a href="tasks.html?id=${project._id}" class="btn text-white btn-sm px-3 py-1 fw-semibold" 
+                    style="font-size: 0.75rem; background-color: #3c3489; border-radius: 6px;">
+                    <i class="bi bi-list-task me-1"></i>Tâches
                 </a>
-                <a href="members.html?id=${project._id}" class="btn btn-light btn-sm py-1 px-2 flex-grow-1 fw-semibold border" style="font-size: 0.75rem; border-radius: 6px; color: #4b5563;">
-                    <i class="bi bi-people"></i> Membres
+                <a href="members.html?id=${project._id}" class="btn btn-light btn-sm px-3 py-1 fw-semibold border" 
+                    style="font-size: 0.75rem; border-radius: 6px; color: #4b5563;">
+                    <i class="bi bi-people me-1"></i>Membres
                 </a>
             </div>
-            ${gestionButtonsHTML}
         </div>
     `;
 
     container.appendChild(div);
+
+    // SÉCURITÉ STRICTE : Les boutons Modifier/Supprimer s'injectent UNIQUEMENT si l'étiquette isOwner est vraie
+    // ET que le conteneur cible est bien la colonne de gauche (mesProjetsList)
+    if (isOwner && containerId === 'mesProjetsList') {
+        const actionsZone = div.querySelector(`#actions-zone-${project._id}`);
+        
+        const adminGroup = document.createElement('div');
+        adminGroup.className = "d-flex gap-1 ms-auto";
+
+        // Bouton Modifier sécurisé
+        const editBtn = document.createElement('button');
+        editBtn.className = "btn btn-outline-secondary btn-sm px-2 py-1";
+        editBtn.style.fontSize = "0.75rem";
+        editBtn.style.borderRadius = "6px";
+        editBtn.title = "Modifier";
+        editBtn.innerHTML = `<i class="bi bi-pencil"></i>`;
+        
+        editBtn.addEventListener('click', () => {
+            const rawDate = project.deadline ? project.deadline.split('T')[0] : '';
+            // Appel direct de la fonction globale
+            window.ouvrirModalModification(project._id, project.title, project.description || '', rawDate);
+        });
+
+        // Bouton Supprimer sécurisé
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = "btn btn-outline-danger btn-sm px-2 py-1";
+        deleteBtn.style.fontSize = "0.75rem";
+        deleteBtn.style.borderRadius = "6px";
+        deleteBtn.title = "Supprimer";
+        deleteBtn.innerHTML = `<i class="bi bi-trash"></i>`;
+        
+        deleteBtn.addEventListener('click', function() {
+            window.supprimerProjet(project._id, this);
+        });
+
+        adminGroup.appendChild(editBtn);
+        adminGroup.appendChild(deleteBtn);
+        actionsZone.appendChild(adminGroup);
+    }
 }
 
-// 5. SUPPRIMER UN PROJET
+// 5. SUPPRIMER UN PROJET (AVEC VÉRIFICATION GLOBALE)
 window.supprimerProjet = async function(id, btnElement) {
+    // Vérification de sécurité : on s'assure qu'on ne tente pas de supprimer un projet assigné
+    const cardContainer = btnElement.closest('.p-4');
+    if (cardContainer && cardContainer.innerHTML.includes("PROJETS PARTAGÉS")) {
+        alert("Action interdite : Vous ne pouvez pas supprimer un projet qui vous a été assigné.");
+        return;
+    }
+
     if (!confirm("Voulez-vous vraiment supprimer ce projet ?")) return;
 
     try {
@@ -239,51 +274,69 @@ window.supprimerProjet = async function(id, btnElement) {
         });
 
         if (response.ok) {
-            chargerLesProjets(); // Recharge la vue globale pour recalculer la pagination instantanément
+            chargerLesProjets(); 
         } else {
-            alert("Erreur ou permission refusée pour supprimer ce projet.");
+            alert("Erreur ou permission refusée par le serveur.");
         }
     } catch (err) {
         console.error("Erreur de suppression:", err);
     }
 };
 
-// 6. MODIFIER UN PROJET
+// 6. MODIFIER UN PROJET - OUVERTURE DU MODAL ET REMPLISSAGE DES CHAMPS (CORRIGÉ)
 window.ouvrirModalModification = function(id, title, description, deadline) {
-    document.getElementById('editProjectId').value = id;
-    document.getElementById('editTitle').value = title;
-    document.getElementById('editDescription').value = description;
-    document.getElementById('editDeadline').value = deadline;
-    
-    if (bsEditModal) bsEditModal.show();
+    // Liaison stricte avec les IDs de ton formulaire de modification de ton modal HTML
+    const inputId = document.getElementById('editProjectId');
+    const inputTitle = document.getElementById('editTitle');
+    const inputDesc = document.getElementById('editDescription');
+    const inputDeadline = document.getElementById('editDeadline');
+
+    if (inputId && inputTitle && inputDesc && inputDeadline) {
+        inputId.value = id;
+        inputTitle.value = title;
+        inputDesc.value = description;
+        inputDeadline.value = deadline;
+        
+        // Affichage du modal d'édition Bootstrap
+        if (bsEditModal) {
+            bsEditModal.show();
+        } else {
+            console.error("Le modal Bootstrap n'est pas initialisé.");
+        }
+    } else {
+        console.error("Champs du modal de modification introuvables dans le HTML.");
+    }
 };
 
-editForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const id = document.getElementById('editProjectId').value;
-    const title = document.getElementById('editTitle').value;
-    const description = document.getElementById('editDescription').value;
-    const deadline = document.getElementById('editDeadline').value;
+// Événement de soumission du formulaire de mise à jour (PUT)
+if (editForm) {
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById('editProjectId').value;
+        const title = document.getElementById('editTitle').value;
+        const description = document.getElementById('editDescription').value;
+        const deadline = document.getElementById('editDeadline').value;
 
-    try {
-        const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ title, description, deadline })
-        });
+        try {
+            const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ title, description, deadline })
+            });
 
-        if (response.ok) {
-            if (bsEditModal) bsEditModal.hide();
-            chargerLesProjets(); 
-        } else {
-            const errData = await response.json();
-            alert("Erreur de mise à jour: " + (errData.error || errData.message || "Serveur bloqué"));
+            if (response.ok) {
+                if (bsEditModal) bsEditModal.hide();
+                chargerLesProjets(); 
+            } else {
+                const errData = await response.json();
+                alert("Erreur de mise à jour: " + (errData.error || errData.message || "Serveur bloqué"));
+            }
+        } catch (err) {
+            console.error("Erreur de modification du projet:", err);
         }
-    } catch (err) {
-        console.error("Erreur de modification du projet:", err);
-    }
-});
+    });
+}
