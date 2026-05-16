@@ -34,7 +34,7 @@ async function chargerLesProjets() {
 
         if (response.ok) {
             const result = await response.json();
-            const projects = result.data || result || [];
+            const projects = result.data || result || [].reverse();
             
             // On vide les deux colonnes
             document.getElementById('mesProjetsList').innerHTML = '';
