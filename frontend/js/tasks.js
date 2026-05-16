@@ -16,57 +16,141 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 
 // VARIABLES DE VUES ET PROJET ACTUEL
 // Add this line where your other DOM variables (vueProjets, vueTaches, etc.) are declared:
+// VARIABLES DE VUES ET PROJET ACTUEL
 const btnNouvelleTache = document.querySelector('[data-bs-target="#addTaskModal"]');
 const vueProjets = document.getElementById('vueProjets');
 const vueTaches = document.getElementById('vueTaches');
 const grilleProjets = document.getElementById('grilleProjets');
 const btnRetourProjets = document.getElementById('btnRetourProjets');
-const titreProjetActuel = document.getElementById('titreProjetActuel');
 
-let projetActuelId = null; 
-let projetActuelData = null; // Stores owner information to manage roles dynamically
 
-// GESTION DES VUES (PROJETS)
+// VARIABLES DU PROJET ACTUEL ET LECTURE DE L'URL
+const urlParams = new URLSearchParams(window.location.search);
+let projetActuelId = urlParams.get('id'); // Déclaré une seule fois ici !
+let projetActuelData = null; 
+
+console.log("ID du projet récupéré dans l'URL :", projetActuelId);
+
+// GESTION DU BOUTON RETOUR
+if (btnRetourProjets) {
+    btnRetourProjets.addEventListener('click', () => {
+        projetActuelId = null; 
+        projetActuelData = null;
+        // On nettoie l'URL pour enlever le ?id= si on clique sur Retour
+        window.history.pushState({}, document.title, window.location.pathname);
+        vueTaches.classList.add('d-none');
+        vueProjets.classList.remove('d-none');
+        chargerProjetsPourTaches(); 
+    });
+}
+
+// INITIALISATION AU CHARGEMENT DE LA PAGE
+document.addEventListener('DOMContentLoaded', () => {
+    if (projetActuelId) {
+        // Cas 1 : On arrive depuis "Mes Projets" en cliquant sur "Tâches"
+        vueProjets.classList.add('d-none');
+        vueTaches.classList.remove('d-none');
+        
+        // On charge les infos du projet, puis les tâches
+        loadMembers().then(() => {
+            if(projetActuelData && projetActuelData.title) {
+                titreProjetActuel.innerHTML = `Tâches : <strong>${projetActuelData.title}</strong>`;
+            }
+            loadTasks(1);
+        });
+    } else {
+        // Cas 2 : On ouvre juste tasks.html via le menu de navigation (pas d'ID)
+        vueTaches.classList.add('d-none');
+        vueProjets.classList.remove('d-none');
+        chargerProjetsPourTaches();
+    }
+});
+
 async function chargerProjetsPourTaches() {
+    if (!grilleProjets) return;
+
+    // 1. Extraction propre de l'ID utilisateur connecté depuis le Token
+    let currentUserId = null;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUserId = String(payload.id || payload._id || payload.userId || '').trim();
+    } catch (e) {
+        console.error("Erreur de lecture du token dans tasks.js", e);
+    }
+
     try {
         const response = await fetch('http://localhost:5000/api/projects', {
+            method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (response.ok) {
             const result = await response.json();
-            // Fallback strategy to find the data list depending on backend payload structure
             const projects = result.data || result || [];
-            
-            grilleProjets.innerHTML = '';
-            
-            if (projects.length === 0) {
-                grilleProjets.innerHTML = '<div class="col-12 text-center text-muted">Aucun projet trouvé. Créez-en un ou attendez d\'être invité !</div>';
-                return;
-            }
+
+            // Sélection des deux conteneurs (Gauche et Droite)
+            const gaucheContainer = document.getElementById('grilleProjets'); // Colonne de gauche
+            const droiteContainer = document.getElementById('mesTachesAssigneesList'); // Colonne de droite
+
+            // On vide les conteneurs avant de les remplir
+            gaucheContainer.innerHTML = '';
+            droiteContainer.innerHTML = '';
+
+            let hasOwned = false;
+            let hasAssigned = false;
 
             projects.forEach(project => {
-                const col = document.createElement('div');
-                col.className = 'col-md-4';
-                col.innerHTML = `
-                    <div class="card h-100 shadow-sm border-0" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-                        <div class="card-body text-center py-5">
-                            <i class="bi bi-folder-fill display-4 text-primary mb-3"></i>
-                            <h5 class="card-title fw-bold">${project.title}</h5>
-                            <p class="text-muted small">Cliquez pour gérer les tâches</p>
+                // Détermination de l'ID du propriétaire
+                let ownerId = '';
+                if (project.owner) {
+                    ownerId = typeof project.owner === 'object' ? (project.owner._id || project.owner.id) : project.owner;
+                }
+                ownerId = String(ownerId).trim();
+                
+                const ownerName = project.owner && typeof project.owner === 'object' 
+                    ? (project.owner.name || project.owner.nom || 'Quelqu\'un') 
+                    : 'Inconnu';
+
+                // Formatage de la date limite
+                const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
+
+                // Structure HTML d'une carte projet simplifiée pour l'onglet Tâches
+                const cardHTML = `
+                    <div class="card shadow-sm border-0 mb-3 task-card">
+                        <div class="card-body p-3">
+                            <h5 class="card-title text-primary fw-bold h6 mb-1">${project.title}</h5>
+                            ${ownerId !== currentUserId ? `<p class="mb-1 small text-muted"><i class="bi bi-person"></i> Par : ${ownerName}</p>` : ''}
+                            <p class="card-text text-muted small mb-2 text-truncate">${project.description || 'Pas de description'}</p>
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <span class="text-secondary style="font-size: 0.75rem;"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</span>
+                                <button class="btn btn-sm btn-primary px-3" onclick="ouvrirVueTaches('${project._id}', '${project.title.replace(/'/g, "\\'")}')">
+                                    <i class="bi bi-folder2-open me-1"></i> Gérer
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
-                
-                col.addEventListener('click', () => {
-                    ouvrirVueTaches(project._id, project.title);
-                });
-                
-                grilleProjets.appendChild(col);
+
+                // Condition magique : C'est le mien -> Gauche, Je suis invité -> Droite
+                if (currentUserId && ownerId && currentUserId === ownerId) {
+                    gaucheContainer.insertAdjacentHTML('beforeend', cardHTML);
+                    hasOwned = true;
+                } else {
+                    droiteContainer.insertAdjacentHTML('beforeend', cardHTML);
+                    hasAssigned = true;
+                }
             });
+
+            // Gérer les cas où une des colonnes est vide
+            if (!hasOwned) {
+                gaucheContainer.innerHTML = '<div class="text-muted small py-3 text-center">Vous n\'avez créé aucun projet.</div>';
+            }
+            if (!hasAssigned) {
+                droiteContainer.innerHTML = '<div class="text-muted small py-3 text-center">Aucun projet ne vous a été partagé.</div>';
+            }
         }
     } catch (error) {
-        console.error("Erreur chargement projets :", error);
+        console.error("Erreur lors du chargement des projets sur la page des tâches :", error);
     }
 }
 
@@ -83,12 +167,7 @@ function ouvrirVueTaches(projectId, projectTitle) {
     });
 }
 
-btnRetourProjets.addEventListener('click', () => {
-    projetActuelId = null; 
-    projetActuelData = null;
-    vueTaches.classList.add('d-none');
-    vueProjets.classList.remove('d-none');
-});
+
 
 
 // GESTION DES TÂCHES
@@ -96,56 +175,62 @@ async function loadTasks(page = 1) {
     if (!projetActuelId) return; 
 
     try {
-        const search = document.getElementById('searchInput').value;
-        const status = document.getElementById('filterStatus').value;
-        const priority = document.getElementById('filterPriority').value;
-        const member = document.getElementById('filterMember').value;
+        // 1. Récupération des filtres de l'interface
+        let searchVal = document.getElementById('searchInput')?.value.toLowerCase() || '';
+        let statusVal = document.getElementById('filterStatus')?.value || '';
+        let priorityVal = document.getElementById('filterPriority')?.value || '';
+        let memberVal = document.getElementById('filterMember')?.value || '';
 
+        // Nettoyage des filtres globaux
+        if (statusVal.toLowerCase() === 'tous' || statusVal === 'all') statusVal = '';
+        if (priorityVal.toLowerCase() === 'tous' || priorityVal === 'all') priorityVal = '';
+        if (memberVal.toLowerCase() === 'tous' || memberVal === 'all') memberVal = '';
+
+        // 2. Construction de la requête pour le Backend
         const query = new URLSearchParams();
-        query.append('page', page);
-        query.append('limit', 6);
-        if (search) query.append('search', search);
-        if (status) query.append('status', status);
-        if (priority) query.append('priority', priority);
-        if (member) query.append('assignedTo', member);
+        query.append('page', page); 
+        query.append('limit', 6); // On demande 6 tâches par page au backend
+
+        // On envoie les filtres au backend pour qu'il fasse le tri directement dans la BDD
+        if (searchVal) query.append('search', searchVal);
+        if (statusVal) query.append('status', statusVal);
+        if (priorityVal) query.append('priority', priorityVal);
+        if (memberVal) query.append('assignedTo', memberVal);
 
         const url = `${BASE_URL}/project/${projetActuelId}?${query}`;
+        const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
 
-        const res = await axios.get(url, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        // Récupération des données du backend
+        let tasksToShow = res.data.data || (Array.isArray(res.data) ? res.data : []);
 
-        // Fixed Data parsing bug (handles root array fallback or object wrap cleanly)
-        const rawTasks = res.data.data || (Array.isArray(res.data) ? res.data : []);
-        
-        renderTasks(rawTasks);
-        
-        const currentP = res.data.page || page;
+        // 3. LA PAGINATION SYNCHRONISÉE
+        // On utilise STRICTEMENT les chiffres renvoyés par ton backend pour éviter les décalages
         const totalP = res.data.totalPages || 1;
+        const currentP = page; 
+
+        // 4. AFFICHAGE DIRECT
+        // On ne fait plus de .filter() ou de .slice() en JS ici, on fait confiance au backend !
+        renderTasks(tasksToShow);
         renderPagination(currentP, totalP);
         currentPage = currentP;
+
     } catch (err) {
-        if (err.response?.status === 401) window.location.href = 'login.html';
-        document.getElementById('taskList').innerHTML = `
-            <div class="empty-state col-12">
-                <i class="bi bi-exclamation-circle fs-1 mb-3 d-block text-danger"></i>
-                <p>Erreur lors du chargement des tâches.</p>
-            </div>`;
+        console.error("Erreur loadTasks :", err);
     }
 }
-
 function renderTasks(tasks) {
-    const list = document.getElementById('taskList');
+    const taskList = document.getElementById('taskList');
+    if (!taskList) return;
+    
+    // Vider la liste avant de la remplir
+    taskList.innerHTML = '';
+
     if (!tasks || tasks.length === 0) {
-        list.innerHTML = `
-            <div class="empty-state col-12">
-                <i class="bi bi-inbox fs-1 mb-3 d-block text-muted"></i>
-                <p>Aucune tâche trouvée pour ce projet.</p>
-            </div>`;
+        taskList.innerHTML = `<div class="col-12 text-muted small p-4 text-center bg-white rounded shadow-sm border">Aucune tâche dans ce projet pour l'instant.</div>`;
         return;
     }
 
-    // 1. EXTRACT LOGGED-IN USER FROM TOKEN (Guarantees matching formats)
+    // 1. EXTRAIRE L'UTILISATEUR CONNECTÉ DEPUIS LE TOKEN
     let currentUserId = null;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -154,21 +239,29 @@ function renderTasks(tasks) {
         console.error("Erreur de lecture du token dans renderTasks", e);
     }
 
-    // 2. EXTRACT PROJECT OWNER ID
+    // 2. EXTRAIRE LE PROPRIÉTAIRE DU PROJET
     let projectOwnerId = '';
     if (projetActuelData && projetActuelData.owner) {
-        if (typeof projetActuelData.owner === 'object') {
-            projectOwnerId = projetActuelData.owner._id || projetActuelData.owner.id || '';
-        } else {
-            projectOwnerId = projetActuelData.owner;
-        }
+        projectOwnerId = typeof projetActuelData.owner === 'object' ? 
+            (projetActuelData.owner._id || projetActuelData.owner.id) : projetActuelData.owner;
     }
     projectOwnerId = String(projectOwnerId).trim();
 
-    // Final ownership evaluation
     const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
+    
+    // 3. LE FILTRE LOGIQUE : Tout le monde voit tout 
+    let tasksToDisplay = tasks;
 
-    list.innerHTML = tasks.map(task => {
+    // Si la liste est vide (géré globalement)
+    if (tasksToDisplay.length === 0) {
+        taskList.innerHTML = `<div class="col-12 text-muted small p-4 text-center bg-white rounded shadow-sm border">Aucune tâche dans ce projet pour l'instant.</div>`;
+        return;
+    }
+
+    let taskListHTML = '';
+
+    // 4. AFFICHAGE DES CARTES EN GRILLE
+    tasksToDisplay.forEach(task => {
         const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
@@ -189,18 +282,12 @@ function renderTasks(tasks) {
                 const selectMembres = document.getElementById('taskAssignedTo');
                 if (selectMembres) {
                     const option = Array.from(selectMembres.options).find(opt => opt.value === assigneeId);
-                    if (option && option.value !== "") {
-                        assignedEmail = option.text;
-                    }
+                    if (option && option.value !== "") assignedEmail = option.text;
                 }
             }
-            
-            if (!assignedEmail && assigneeId) {
-                assignedEmail = "Membre assigné"; 
-            }
+            if (!assignedEmail && assigneeId) assignedEmail = "Membre assigné"; 
         }
 
-        // TEXT DISPLAY FOR ASSIGNED USER
         let assignedNameHTML = assignedEmail 
             ? `<div class="d-flex align-items-center mt-3 pt-3 border-top">
                  <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
@@ -215,13 +302,13 @@ function renderTasks(tasks) {
                  <i class="bi bi-person-x me-2 fs-5"></i> Non assigné
                </div>`;
 
-        // OWNER ONLY: Add inline re-assignment selector menu
         if (isProjectOwner) {
+            const membresList = window.membersCache || [];
             assignedNameHTML += `
                 <div class="mt-2">
                     <select id="assign-${task._id}" class="form-select form-select-sm shadow-sm" onchange="assignTask('${task._id}')">
                         <option value="">-- Réassigner la tâche --</option>
-                        ${membersCache.map(member => `
+                        ${membresList.map(member => `
                             <option value="${member._id || member.id}" ${String(assigneeId) === String(member._id || member.id) ? 'selected' : ''}>
                                 ${member.email || member.name || member.nom}
                             </option>
@@ -230,7 +317,6 @@ function renderTasks(tasks) {
                 </div>`;
         }
 
-        // STATUS DROPDOWN (Visible to everyone)
         let actionButtons = `
             <select class="form-select form-select-sm w-auto shadow-sm" style="min-width: 110px;" onchange="updateStatus('${task._id}', this.value)">
                 <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
@@ -239,7 +325,6 @@ function renderTasks(tasks) {
             </select>
         `;
 
-        // --- FIXED LAYER: ONLY THE OWNER SEES THE EDIT AND DELETE BUTTONS ---
         if (isProjectOwner) {
             actionButtons += `
                 <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')" title="Modifier">
@@ -251,38 +336,47 @@ function renderTasks(tasks) {
             `;
         }
 
-        return `
-            <div class="col-md-6 col-lg-4">
-                <div class="card task-card shadow-sm h-100">
+        // Ajout à la grille (col-12 col-md-6 col-xl-4)
+        taskListHTML += `
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card task-card shadow-sm h-100 border-0">
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
                             <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
                         </div>
                         ${descriptionText}
-                        <span class="badge ${statusClass} text-white mb-2 align-self-start">${task.status}</span>
+                        <span class="badge ${statusClass} text-white mb-3 align-self-start">${task.status}</span>
                         
                         <div class="mt-auto">
                             ${assignedNameHTML}
-                            <div class="d-flex gap-2 mt-3 align-items-center flex-wrap d-flex">
+                            <div class="d-flex gap-2 mt-3 align-items-center flex-wrap">
                                 ${actionButtons}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>`;
-    }).join('');
+    });
+
+    taskList.innerHTML = taskListHTML;
 }
 
 function renderPagination(page, totalPages) {
     const div = document.getElementById('pagination');
-    if (totalPages <= 1) { div.innerHTML = ''; return; }
+    if (!div) return; // Sécurité au cas où la balise HTML manque
+
+    // On s'assure d'afficher au moins "Page 1 / 1" même s'il n'y a aucune tâche
+    const safeTotalPages = totalPages > 0 ? totalPages : 1;
+    const safePage = page > 0 ? page : 1;
+
+    // On ne cache plus la div, on la remplit systématiquement
     div.innerHTML = `
-        <button class="pagination-btn" onclick="loadTasks(${page - 1})" ${page <= 1 ? 'disabled' : ''}>
+        <button class="btn btn-sm btn-outline-secondary pagination-btn" onclick="loadTasks(${safePage - 1})" ${safePage <= 1 ? 'disabled' : ''}>
             <i class="bi bi-chevron-left"></i> Précédent
         </button>
-        <span class="text-muted small">Page ${page} / ${totalPages}</span>
-        <button class="pagination-btn" onclick="loadTasks(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>
+        <span class="text-muted small mx-3">Page ${safePage} / ${safeTotalPages}</span>
+        <button class="btn btn-sm btn-outline-secondary pagination-btn" onclick="loadTasks(${safePage + 1})" ${safePage >= safeTotalPages ? 'disabled' : ''}>
             Suivant <i class="bi bi-chevron-right"></i>
         </button>`;
 }
@@ -303,24 +397,41 @@ async function addTask() {
     errorDiv.classList.add('d-none');
 
     try {
-        const body = { title, description, priority, status, project: projetActuelId };
-        if (assignedTo) body.assignedTo = assignedTo;
+        const taskData = {
+            title: title,
+            description: description,
+            priority: priority,
+            status: status,
+            project: projetActuelId // Le plus important : lier au projet actuel !
+        };
+        
+        if (assignedTo) {
+            taskData.assignedTo = assignedTo;
+        }
 
-        await axios.post(BASE_URL, body, {
+        // Envoi de la requête
+        await axios.post(BASE_URL, taskData, {
             headers: { Authorization: `Bearer ${token}` }
         });
 
-        bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
+        // Fermer la modale
+        const modalEl = document.getElementById('addTaskModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        // Réinitialiser le formulaire
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
         document.getElementById('taskStatus').value = '';
         document.getElementById('taskAssignedTo').value = '';
-        
-        localStorage.removeItem('draft_' + projetActuelId);
-        loadTasks(currentPage);
+
+        // Recharger les tâches
+        loadTasks(1);
+
     } catch (err) {
-        errorDiv.textContent = err.response?.data?.error || 'Erreur lors de l\'ajout.';
+        console.error("Erreur lors de l'ajout de la tâche :", err);
+        errorDiv.textContent = "Erreur lors de l'ajout de la tâche. Vérifiez la console.";
         errorDiv.classList.remove('d-none');
     }
 }
@@ -405,9 +516,11 @@ async function loadMembers() {
         });
         
         projetActuelData = res.data.data || res.data;
-        membersCache = projetActuelData.members || [];
-
-        // 1. MATCH THE IDENTITY SYSTEM FROM PROJECTS.JS EXACTLY
+        
+        // 1. Save globally to the window object so renderTasks() can see it
+        window.membersCache = projetActuelData.members || [];
+        
+        // 2. Extract identities for owner verification
         let currentUserId = null;
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
@@ -416,7 +529,6 @@ async function loadMembers() {
             console.error("Erreur de lecture du token dans tasks.js", e);
         }
         
-        // Extract the owner's ID whether populated as an object or a flat ID string
         let projectOwnerId = '';
         if (projetActuelData && projetActuelData.owner) {
             if (typeof projetActuelData.owner === 'object') {
@@ -427,32 +539,25 @@ async function loadMembers() {
         }
         projectOwnerId = String(projectOwnerId).trim();
 
-        // Debug prints to verify consistency in browser dev console (F12)
-        console.log("ID utilisateur connecté (Token) :", currentUserId);
-        console.log("ID Propriétaire du projet (Backend) :", projectOwnerId);
-
-        // Perform evaluation logic
         const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
 
-        // 2. TOGGLE "NOUVELLE TÂCHE" BUTTON DISPLAY VISIBILITY
         if (btnNouvelleTache) {
             if (isProjectOwner) {
-                console.log("👉 Résultat : Propriétaire détecté. Bouton affiché.");
-                btnNouvelleTache.classList.remove('d-none'); // Show it
+                btnNouvelleTache.classList.remove('d-none');
             } else {
-                console.log("👉 Résultat : Membre invité détecté. Bouton masqué.");
-                btnNouvelleTache.classList.add('d-none');    // Hide it
+                btnNouvelleTache.classList.add('d-none');
             }
         }
 
-        // 3. RE-POPULATE FILTER SELECTORS & FORM INPUTS (Completely Untouched)
+        // 3. RE-POPULATE FILTER SELECTORS & FORM INPUTS USING THE WINDOW CACHE
         const filterSelect = document.getElementById('filterMember');
         if (filterSelect) filterSelect.innerHTML = '<option value="">Tous les membres</option>';
         
         const assignSelect = document.getElementById('taskAssignedTo');
         if (assignSelect) assignSelect.innerHTML = '<option value="">-- Non assigné --</option>';
 
-        membersCache.forEach(member => {
+        // Loop through window.membersCache so the main filter works perfectly too!
+        window.membersCache.forEach(member => {
             const option = document.createElement('option');
             option.value = member._id || member.id; 
             option.textContent = member.email || member.name || member.nom;
@@ -464,22 +569,6 @@ async function loadMembers() {
         console.error('Erreur de chargement des membres dans loadMembers:', err);
     }
 }
-// Brouillons dynamiques par projet
-['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) {
-        el.addEventListener('input', () => {
-            if(!projetActuelId) return;
-            const draft = {
-                title: document.getElementById('taskTitle').value,
-                priority: document.getElementById('taskPriority').value,
-                status: document.getElementById('taskStatus').value,
-                assignedTo: document.getElementById('taskAssignedTo').value
-            };
-            localStorage.setItem('draft_' + projetActuelId, JSON.stringify(draft));
-        });
-    }
-});
 
 const modalEl = document.getElementById('addTaskModal');
 if(modalEl) {
@@ -511,8 +600,36 @@ async function pollNotifications() {
         console.log('Notifications non disponibles');
     }
 }
+// FUNCTION POUR REASSIGNER UNE TÂCHE (APPELÉE PAR LE DROPDOWN ONCHANGE)
+async function assignTask(taskId) {
+    const selectElement = document.getElementById(`assign-${taskId}`);
+    if (!selectElement) return;
 
+    const newAssigneeId = selectElement.value;
+
+    try {
+        // Envoi de la requête PATCH au backend avec la valeur sélectionnée
+        const response = await axios.patch(
+            `${BASE_URL}/${taskId}/assign`, 
+            { assignedTo: newAssigneeId || null }, 
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.status === 200) {
+            alert("Tâche réassignée avec succès !");
+            loadTasks(currentPage); // Recharge la liste des tâches pour mettre l'affichage à jour
+        }
+    } catch (err) {
+        console.error("Erreur lors de la réassignation :", err);
+        alert(err.response?.data?.error || "Erreur lors de la réassignation de la tâche.");
+        loadTasks(currentPage); // Annule le changement visuel si le backend refuse
+    }
+}
 // DÉMARRAGE DE LA PAGE
 pollNotifications();
 setInterval(pollNotifications, 30000);
+
+// REMOVED: chargerProjetsPourTaches(); (It is already handled inside document.addEventListener('DOMContentLoaded') up top!)
+// Rendre la fonction accessible globalement pour les attributs HTML 'onclick' / 'onchange'
+window.assignTask = assignTask;
 chargerProjetsPourTaches();
