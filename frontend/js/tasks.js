@@ -396,10 +396,10 @@ async function loadMembers() {
             headers: { Authorization: `Bearer ${token}` }
         });
         
-        // On récupère le projet proprement
+        // 1. On isole bien le projet
         const project = res.data.data || res.data;
         
-        // ✅ CORRECTION ICI : On utilise "project" et non "res.data"
+        // 2. On récupère les membres DE CE PROJET
         membersCache = project.members || [];
 
         const filterSelect = document.getElementById('filterMember');
@@ -408,9 +408,10 @@ async function loadMembers() {
         const assignSelect = document.getElementById('taskAssignedTo');
         if (assignSelect) assignSelect.innerHTML = '<option value="">Sélectionner un membre</option>';
 
+        // 3. On remplit le menu déroulant exigé par le professeur
         membersCache.forEach(member => {
             const option = document.createElement('option');
-            option.value = member._id; // Si membersCache était vide, ça ne mettait jamais de _id !
+            option.value = member._id; 
             option.textContent = member.name || member.email;
             
             if (filterSelect) filterSelect.appendChild(option.cloneNode(true));
