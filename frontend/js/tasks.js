@@ -182,33 +182,26 @@ async function loadTasks(page = 1) {
 } catch (err) {
         if (err.response?.status === 401) window.location.href = 'login.html';
         
-        // On affiche l'erreur dans les NOUVELLES colonnes (car taskList n'existe plus)
-        const mesTachesList = document.getElementById('mesTachesList');
-        const autresTachesList = document.getElementById('autresTachesList');
-        
-        if (mesTachesList && autresTachesList) {
-            const errorHTML = `
+        const taskList = document.getElementById('taskList');
+        if (taskList) {
+            taskList.innerHTML = `
                 <div class="empty-state col-12 bg-white rounded shadow-sm border border-danger">
                     <i class="bi bi-exclamation-circle fs-3 mb-2 d-block text-danger"></i>
                     <p class="small text-muted mb-0">Erreur de chargement des tâches.</p>
                 </div>`;
-            mesTachesList.innerHTML = errorHTML;
-            autresTachesList.innerHTML = errorHTML;
         }
     }
 }
 
 function renderTasks(tasks) {
-    const mesTachesList = document.getElementById('mesTachesList');
-    const autresTachesList = document.getElementById('autresTachesList');
+    const taskList = document.getElementById('taskList');
+    if (!taskList) return;
     
-    // Vider les listes avant de les remplir
-    mesTachesList.innerHTML = '';
-    autresTachesList.innerHTML = '';
+    // Vider la liste avant de la remplir
+    taskList.innerHTML = '';
 
     if (!tasks || tasks.length === 0) {
-        mesTachesList.innerHTML = `<div class="text-muted small p-3 text-center bg-white rounded shadow-sm">Aucune tâche assignée.</div>`;
-        autresTachesList.innerHTML = `<div class="text-muted small p-3 text-center bg-white rounded shadow-sm">Aucune autre tâche.</div>`;
+        taskList.innerHTML = `<div class="col-12 text-muted small p-4 text-center bg-white rounded shadow-sm border">Aucune tâche dans ce projet pour l'instant.</div>`;
         return;
     }
 
@@ -231,11 +224,29 @@ function renderTasks(tasks) {
 
     const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
 
-    // Variables pour stocker le HTML des deux colonnes
-    let mesTachesHTML = '';
-    let autresTachesHTML = '';
+    // 3. LE FILTRE LOGIQUE : On trie ce qu'on va afficher
+    let tasksToDisplay = tasks;
+    if (!isProjectOwner) {
+        // Si je ne suis pas le propriétaire, je ne garde QUE les tâches qui me sont assignées
+        tasksToDisplay = tasks.filter(task => {
+            let assigneeId = null;
+            if (task.assignedTo) {
+                assigneeId = typeof task.assignedTo === 'object' ? (task.assignedTo._id || task.assignedTo.id) : task.assignedTo;
+            }
+            return String(assigneeId) === currentUserId;
+        });
+    }
 
-    tasks.forEach(task => {
+    // Si après avoir filtré, il n'y a plus rien pour cet utilisateur :
+    if (tasksToDisplay.length === 0) {
+        taskList.innerHTML = `<div class="col-12 text-muted small p-4 text-center bg-white rounded shadow-sm border">Aucune tâche ne vous est assignée dans ce projet.</div>`;
+        return;
+    }
+
+    let taskListHTML = '';
+
+    // 4. AFFICHAGE DES CARTES EN GRILLE
+    tasksToDisplay.forEach(task => {
         const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
@@ -262,9 +273,6 @@ function renderTasks(tasks) {
             if (!assignedEmail && assigneeId) assignedEmail = "Membre assigné"; 
         }
 
-        // VERIFICATION : Cette tâche est-elle à moi ?
-        const isAssignedToMe = (String(assigneeId) === currentUserId);
-
         let assignedNameHTML = assignedEmail 
             ? `<div class="d-flex align-items-center mt-3 pt-3 border-top">
                  <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
@@ -280,11 +288,12 @@ function renderTasks(tasks) {
                </div>`;
 
         if (isProjectOwner) {
+            const membresList = window.membersCache || [];
             assignedNameHTML += `
                 <div class="mt-2">
                     <select id="assign-${task._id}" class="form-select form-select-sm shadow-sm" onchange="assignTask('${task._id}')">
                         <option value="">-- Réassigner la tâche --</option>
-                        ${membersCache.map(member => `
+                        ${membresList.map(member => `
                             <option value="${member._id || member.id}" ${String(assigneeId) === String(member._id || member.id) ? 'selected' : ''}>
                                 ${member.email || member.name || member.nom}
                             </option>
@@ -312,37 +321,30 @@ function renderTasks(tasks) {
             `;
         }
 
-        // Structure HTML de la carte (largeur 100% car elle est déjà dans une demi-colonne)
-        const cardHTML = `
-            <div class="card task-card shadow-sm w-100">
-                <div class="card-body p-4 d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
-                        <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
-                    </div>
-                    ${descriptionText}
-                    <span class="badge ${statusClass} text-white mb-2 align-self-start">${task.status}</span>
-                    
-                    <div class="mt-auto">
-                        ${assignedNameHTML}
-                        <div class="d-flex gap-2 mt-3 align-items-center flex-wrap d-flex">
-                            ${actionButtons}
+        // Ajout à la grille (col-12 col-md-6 col-xl-4)
+        taskListHTML += `
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card task-card shadow-sm h-100 border-0">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
+                            <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
+                        </div>
+                        ${descriptionText}
+                        <span class="badge ${statusClass} text-white mb-3 align-self-start">${task.status}</span>
+                        
+                        <div class="mt-auto">
+                            ${assignedNameHTML}
+                            <div class="d-flex gap-2 mt-3 align-items-center flex-wrap">
+                                ${actionButtons}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>`;
-
-        // TRIER : Si c'est à moi -> Colonne de Gauche, Sinon -> Colonne de Droite
-        if (isAssignedToMe) {
-            mesTachesHTML += cardHTML;
-        } else {
-            autresTachesHTML += cardHTML;
-        }
     });
 
-    // Injection finale dans les colonnes avec un message de fallback si la colonne est vide
-    mesTachesList.innerHTML = mesTachesHTML || `<div class="text-muted small p-4 text-center bg-white rounded shadow-sm w-100 border">Aucune tâche ne vous est assignée pour l'instant.</div>`;
-    autresTachesList.innerHTML = autresTachesHTML || `<div class="text-muted small p-4 text-center bg-white rounded shadow-sm w-100 border">Aucune autre tâche dans ce projet.</div>`;
+    taskList.innerHTML = taskListHTML;
 }
 
 function renderPagination(page, totalPages) {
@@ -374,24 +376,41 @@ async function addTask() {
     errorDiv.classList.add('d-none');
 
     try {
-        const body = { title, description, priority, status, project: projetActuelId };
-        if (assignedTo) body.assignedTo = assignedTo;
+        const taskData = {
+            title: title,
+            description: description,
+            priority: priority,
+            status: status,
+            project: projetActuelId // Le plus important : lier au projet actuel !
+        };
+        
+        if (assignedTo) {
+            taskData.assignedTo = assignedTo;
+        }
 
-        await axios.post(BASE_URL, body, {
+        // Envoi de la requête
+        await axios.post(BASE_URL, taskData, {
             headers: { Authorization: `Bearer ${token}` }
         });
 
-        bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
+        // Fermer la modale
+        const modalEl = document.getElementById('addTaskModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        // Réinitialiser le formulaire
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
         document.getElementById('taskStatus').value = '';
         document.getElementById('taskAssignedTo').value = '';
-        
-        localStorage.removeItem('draft_' + projetActuelId);
-        loadTasks(currentPage);
+
+        // Recharger les tâches
+        loadTasks(1);
+
     } catch (err) {
-        errorDiv.textContent = err.response?.data?.error || 'Erreur lors de l\'ajout.';
+        console.error("Erreur lors de l'ajout de la tâche :", err);
+        errorDiv.textContent = "Erreur lors de l'ajout de la tâche. Vérifiez la console.";
         errorDiv.classList.remove('d-none');
     }
 }
