@@ -516,9 +516,11 @@ async function loadMembers() {
         });
         
         projetActuelData = res.data.data || res.data;
+        
+        // 1. Save globally to the window object so renderTasks() can see it
         window.membersCache = projetActuelData.members || [];
-
-        // 1. MATCH THE IDENTITY SYSTEM FROM PROJECTS.JS EXACTLY
+        
+        // 2. Extract identities for owner verification
         let currentUserId = null;
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
@@ -527,7 +529,6 @@ async function loadMembers() {
             console.error("Erreur de lecture du token dans tasks.js", e);
         }
         
-        // Extract the owner's ID whether populated as an object or a flat ID string
         let projectOwnerId = '';
         if (projetActuelData && projetActuelData.owner) {
             if (typeof projetActuelData.owner === 'object') {
@@ -538,32 +539,25 @@ async function loadMembers() {
         }
         projectOwnerId = String(projectOwnerId).trim();
 
-        // Debug prints to verify consistency in browser dev console (F12)
-        console.log("ID utilisateur connecté (Token) :", currentUserId);
-        console.log("ID Propriétaire du projet (Backend) :", projectOwnerId);
-
-        // Perform evaluation logic
         const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
 
-        // 2. TOGGLE "NOUVELLE TÂCHE" BUTTON DISPLAY VISIBILITY
         if (btnNouvelleTache) {
             if (isProjectOwner) {
-                console.log("👉 Résultat : Propriétaire détecté. Bouton affiché.");
-                btnNouvelleTache.classList.remove('d-none'); // Show it
+                btnNouvelleTache.classList.remove('d-none');
             } else {
-                console.log("👉 Résultat : Membre invité détecté. Bouton masqué.");
-                btnNouvelleTache.classList.add('d-none');    // Hide it
+                btnNouvelleTache.classList.add('d-none');
             }
         }
 
-        // 3. RE-POPULATE FILTER SELECTORS & FORM INPUTS (Completely Untouched)
+        // 3. RE-POPULATE FILTER SELECTORS & FORM INPUTS USING THE WINDOW CACHE
         const filterSelect = document.getElementById('filterMember');
         if (filterSelect) filterSelect.innerHTML = '<option value="">Tous les membres</option>';
         
         const assignSelect = document.getElementById('taskAssignedTo');
         if (assignSelect) assignSelect.innerHTML = '<option value="">-- Non assigné --</option>';
 
-        membersCache.forEach(member => {
+        // Loop through window.membersCache so the main filter works perfectly too!
+        window.membersCache.forEach(member => {
             const option = document.createElement('option');
             option.value = member._id || member.id; 
             option.textContent = member.email || member.name || member.nom;
@@ -575,22 +569,6 @@ async function loadMembers() {
         console.error('Erreur de chargement des membres dans loadMembers:', err);
     }
 }
-// Brouillons dynamiques par projet
-['taskTitle', 'taskPriority', 'taskStatus'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) {
-        el.addEventListener('input', () => {
-            if(!projetActuelId) return;
-            const draft = {
-                title: document.getElementById('taskTitle').value,
-                priority: document.getElementById('taskPriority').value,
-                status: document.getElementById('taskStatus').value,
-                assignedTo: document.getElementById('taskAssignedTo').value
-            };
-            localStorage.setItem('draft_' + projetActuelId, JSON.stringify(draft));
-        });
-    }
-});
 
 const modalEl = document.getElementById('addTaskModal');
 if(modalEl) {
