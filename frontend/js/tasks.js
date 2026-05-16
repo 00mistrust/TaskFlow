@@ -170,16 +170,30 @@ async function loadTasks(page = 1) {
             headers: { Authorization: `Bearer ${token}` }
         });
 
-        // Fixed Data parsing bug (handles root array fallback or object wrap cleanly)
-        const rawTasks = res.data.data || (Array.isArray(res.data) ? res.data : []);
+        // On récupère les tâches (qu'elles soient dans un objet ou un tableau simple)
+        let rawTasks = res.data.data || (Array.isArray(res.data) ? res.data : []);
         
+        let currentP = res.data.page || page;
+        let totalP = res.data.totalPages;
+
+        // LE CORRECTIF EST ICI 👇
+        // Si le backend n'a pas fourni totalPages, on gère la pagination en Javascript !
+        if (!totalP) {
+            // On calcule le nombre de pages (arrondi au supérieur)
+            totalP = Math.ceil(rawTasks.length / 6) || 1;
+            
+            // On découpe le tableau pour ne garder que les 6 tâches de la page actuelle
+            const startIndex = (page - 1) * 6;
+            rawTasks = rawTasks.slice(startIndex, startIndex + 6);
+        }
+
+        // On envoie le paquet de 6 tâches à l'affichage
         renderTasks(rawTasks);
         
-        const currentP = res.data.page || page;
-        const totalP = res.data.totalPages || 1;
         renderPagination(currentP, totalP);
         currentPage = currentP;
-} catch (err) {
+
+    } catch (err) {
         if (err.response?.status === 401) window.location.href = 'login.html';
         
         const taskList = document.getElementById('taskList');
