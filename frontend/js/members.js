@@ -11,7 +11,7 @@ if (!token) {
 
 async function loadMembers() {
     if (!PROJECT_ID) {
-        document.getElementById('membersList').innerHTML = `<div class="alert alert-warning">Aucun projet sélectionné.</div>`;
+        document.getElementById('membersList').innerHTML = `<div class="alert alert-warning">Il faut aller vers projets , creer un projet et cliquer sur le bouton membre pour assigner un membre au projet specifique</div>`;
         return; // J'ai retiré le code cassé ici
     }
     
