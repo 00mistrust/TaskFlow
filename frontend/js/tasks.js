@@ -175,22 +175,23 @@ async function loadTasks(page = 1) {
     if (!projetActuelId) return; 
 
     try {
+        // 1. Récupération des filtres de l'interface
         let searchVal = document.getElementById('searchInput')?.value.toLowerCase() || '';
         let statusVal = document.getElementById('filterStatus')?.value || '';
         let priorityVal = document.getElementById('filterPriority')?.value || '';
         let memberVal = document.getElementById('filterMember')?.value || '';
 
+        // Nettoyage des filtres globaux
         if (statusVal.toLowerCase() === 'tous' || statusVal === 'all') statusVal = '';
         if (priorityVal.toLowerCase() === 'tous' || priorityVal === 'all') priorityVal = '';
         if (memberVal.toLowerCase() === 'tous' || memberVal === 'all') memberVal = '';
 
- const query = new URLSearchParams();
-        
-        // 🚀 L'ASTUCE : On force le backend à nous envoyer jusqu'à 100 tâches d'un coup
-        // Comme ça, on a tout, et notre JavaScript (slice) va les couper par paquets de 6
-        query.append('limit', 100); 
+        // 2. Construction de la requête pour le Backend
+        const query = new URLSearchParams();
+        query.append('page', page); 
+        query.append('limit', 6); // On demande 6 tâches par page au backend
 
-        // Les filtres...
+        // On envoie les filtres au backend pour qu'il fasse le tri directement dans la BDD
         if (searchVal) query.append('search', searchVal);
         if (statusVal) query.append('status', statusVal);
         if (priorityVal) query.append('priority', priorityVal);
@@ -199,39 +200,21 @@ async function loadTasks(page = 1) {
         const url = `${BASE_URL}/project/${projetActuelId}?${query}`;
         const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
 
-        let rawTasks = res.data.data || (Array.isArray(res.data) ? res.data : []);
+        // Récupération des données du backend
+        let tasksToShow = res.data.data || (Array.isArray(res.data) ? res.data : []);
 
-        // 2. LE FILTRAGE JAVASCRIPT (identique)
-        rawTasks = rawTasks.filter(task => {
-            const title = (task.title || '').toLowerCase();
-            const desc = (task.description || '').toLowerCase();
-            
-            const matchSearch = !searchVal || title.includes(searchVal) || desc.includes(searchVal);
-            const matchStatus = !statusVal || task.status === statusVal;
-            const matchPriority = !priorityVal || task.priority === priorityVal;
-            
-            let assigneeId = null;
-            if (task.assignedTo) {
-                assigneeId = typeof task.assignedTo === 'object' ? (task.assignedTo._id || task.assignedTo.id) : task.assignedTo;
-            }
-            const matchMember = !memberVal || String(assigneeId) === String(memberVal);
+        // 3. LA PAGINATION SYNCHRONISÉE
+        // On utilise STRICTEMENT les chiffres renvoyés par ton backend pour éviter les décalages
+        const totalP = res.data.totalPages || 1;
+        const currentP = page; 
 
-            return matchSearch && matchStatus && matchPriority && matchMember;
-        });
-
-        // 3. LA PAGINATION JAVASCRIPT (Maintenant ça va marcher car rawTasks a TOUTES les tâches !)
-        const totalP = Math.ceil(rawTasks.length / 6) || 1;
-        const currentP = page > totalP ? totalP : page; 
-        const startIndex = (currentP - 1) * 6;
-        const paginatedTasks = rawTasks.slice(startIndex, startIndex + 6);
-
-        // 4. AFFICHAGE
-        renderTasks(paginatedTasks);
+        // 4. AFFICHAGE DIRECT
+        // On ne fait plus de .filter() ou de .slice() en JS ici, on fait confiance au backend !
+        renderTasks(tasksToShow);
         renderPagination(currentP, totalP);
         currentPage = currentP;
 
     } catch (err) {
-        // ... (gestion d'erreur identique) ...
         console.error("Erreur loadTasks :", err);
     }
 }
@@ -265,23 +248,13 @@ function renderTasks(tasks) {
     projectOwnerId = String(projectOwnerId).trim();
 
     const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
-
-    // 3. LE FILTRE LOGIQUE : On trie ce qu'on va afficher
+    
+    // 3. LE FILTRE LOGIQUE : Tout le monde voit tout 
     let tasksToDisplay = tasks;
-    if (!isProjectOwner) {
-        // Si je ne suis pas le propriétaire, je ne garde QUE les tâches qui me sont assignées
-        tasksToDisplay = tasks.filter(task => {
-            let assigneeId = null;
-            if (task.assignedTo) {
-                assigneeId = typeof task.assignedTo === 'object' ? (task.assignedTo._id || task.assignedTo.id) : task.assignedTo;
-            }
-            return String(assigneeId) === currentUserId;
-        });
-    }
 
-    // Si après avoir filtré, il n'y a plus rien pour cet utilisateur :
+    // Si la liste est vide (géré globalement)
     if (tasksToDisplay.length === 0) {
-        taskList.innerHTML = `<div class="col-12 text-muted small p-4 text-center bg-white rounded shadow-sm border">Aucune tâche ne vous est assignée dans ce projet.</div>`;
+        taskList.innerHTML = `<div class="col-12 text-muted small p-4 text-center bg-white rounded shadow-sm border">Aucune tâche dans ce projet pour l'instant.</div>`;
         return;
     }
 
