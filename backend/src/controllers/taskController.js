@@ -2,16 +2,52 @@ const Task = require('../models/task');
 const { logActivity } = require('./activityController'); 
 
 // GET /project/:projectId
+// GET /project/:projectId (ou /tasks)
 exports.getTasksByProject = async (req, res) => {
   try {
     const projectId = req.params.projectId || req.query.project;
     if (!projectId) return res.status(400).json({ error: "ID de projet requis" });
 
     const TaskModel = mongoose.model('task');
-    const tasks = await TaskModel.find({ project: projectId })
-      .populate('assignedTo', 'nom email'); // Selects exclusively name and email attributes!
 
-    res.json(tasks);
+    // 1. Configuration de la pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6; // On respecte la limite de 6
+    const skip = (page - 1) * limit;
+
+    // 2. Construction du filtre (conditionnel)
+    const condition = { project: projectId };
+
+    // Si le paramètre existe dans la requête (req.query), on l'ajoute à la condition
+    if (req.query.status) condition.status = req.query.status;
+    if (req.query.priority) condition.priority = req.query.priority;
+    if (req.query.assignedTo) condition.assignedTo = req.query.assignedTo;
+
+    // 3. Recherche par mot-clé avec $regex (option i pour ignorer la casse)
+    if (req.query.search) {
+      condition.$or = [
+        { title: { $regex: req.query.search, $options: 'i' } },
+        { description: { $regex: req.query.search, $options: 'i' } }
+      ];
+    }
+
+    // 4. Exécution de la requête avec skip, limit et populate
+    const tasks = await TaskModel.find(condition)
+      .populate('assignedTo', 'nom email')
+      .skip(skip)
+      .limit(limit);
+
+    // 5. Comptage total pour la pagination
+    const total = await TaskModel.countDocuments(condition);
+
+    // 6. Format de retour exigé par le PDF
+    res.json({
+      data: tasks,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit) || 1
+    });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -151,45 +151,56 @@ async function loadTasks(page = 1) {
     if (!projetActuelId) return; 
 
     try {
-        const search = document.getElementById('searchInput').value;
-        const status = document.getElementById('filterStatus').value;
-        const priority = document.getElementById('filterPriority').value;
-        const member = document.getElementById('filterMember').value;
+        // 1. On récupère les valeurs de vos filtres HTML
+        const searchVal = document.getElementById('searchInput').value.toLowerCase();
+        const statusVal = document.getElementById('filterStatus').value;
+        const priorityVal = document.getElementById('filterPriority').value;
+        const memberVal = document.getElementById('filterMember').value;
 
+        // On garde l'appel API tel quel au cas où le backend l'utiliserait un jour
         const query = new URLSearchParams();
         query.append('page', page);
         query.append('limit', 6);
-        if (search) query.append('search', search);
-        if (status) query.append('status', status);
-        if (priority) query.append('priority', priority);
-        if (member) query.append('assignedTo', member);
+        if (searchVal) query.append('search', searchVal);
+        if (statusVal) query.append('status', statusVal);
+        if (priorityVal) query.append('priority', priorityVal);
+        if (memberVal) query.append('assignedTo', memberVal);
 
         const url = `${BASE_URL}/project/${projetActuelId}?${query}`;
+        const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
 
-        const res = await axios.get(url, {
-            headers: { Authorization: `Bearer ${token}` }
+        let rawTasks = res.data.data || (Array.isArray(res.data) ? res.data : []);
+
+        // 2. LE FILTRAGE JAVASCRIPT (La solution miracle)
+        // On filtre manuellement le tableau en fonction des champs remplis
+        rawTasks = rawTasks.filter(task => {
+            const title = (task.title || '').toLowerCase();
+            const desc = (task.description || '').toLowerCase();
+            
+            const matchSearch = !searchVal || title.includes(searchVal) || desc.includes(searchVal);
+            const matchStatus = !statusVal || task.status === statusVal;
+            const matchPriority = !priorityVal || task.priority === priorityVal;
+            
+            let assigneeId = null;
+            if (task.assignedTo) {
+                assigneeId = typeof task.assignedTo === 'object' ? (task.assignedTo._id || task.assignedTo.id) : task.assignedTo;
+            }
+            const matchMember = !memberVal || String(assigneeId) === String(memberVal);
+
+            return matchSearch && matchStatus && matchPriority && matchMember;
         });
 
-        // On récupère les tâches (qu'elles soient dans un objet ou un tableau simple)
-        let rawTasks = res.data.data || (Array.isArray(res.data) ? res.data : []);
+        // 3. LA PAGINATION SÉCURISÉE (qui s'adapte au nombre de tâches filtrées)
+        const totalP = Math.ceil(rawTasks.length / 6) || 1;
         
-        let currentP = res.data.page || page;
-        let totalP = res.data.totalPages;
-
-        // LE CORRECTIF EST ICI 👇
-        // Si le backend n'a pas fourni totalPages, on gère la pagination en Javascript !
-        if (!totalP) {
-            // On calcule le nombre de pages (arrondi au supérieur)
-            totalP = Math.ceil(rawTasks.length / 6) || 1;
-            
-            // On découpe le tableau pour ne garder que les 6 tâches de la page actuelle
-            const startIndex = (page - 1) * 6;
-            rawTasks = rawTasks.slice(startIndex, startIndex + 6);
-        }
-
-        // On envoie le paquet de 6 tâches à l'affichage
-        renderTasks(rawTasks);
+        // Si on est sur la page 3 mais que le filtre ne donne qu'une page, on ramène à la page 1
+        const currentP = page > totalP ? totalP : page; 
         
+        const startIndex = (currentP - 1) * 6;
+        const paginatedTasks = rawTasks.slice(startIndex, startIndex + 6);
+
+        // 4. On envoie tout à l'affichage
+        renderTasks(paginatedTasks);
         renderPagination(currentP, totalP);
         currentPage = currentP;
 
