@@ -22,24 +22,48 @@ const vueProjets = document.getElementById('vueProjets');
 const vueTaches = document.getElementById('vueTaches');
 const grilleProjets = document.getElementById('grilleProjets');
 const btnRetourProjets = document.getElementById('btnRetourProjets');
-const titreProjetActuel = document.getElementById('titreProjetActuel');
 
-let projetActuelId = null; 
+
+// VARIABLES DU PROJET ACTUEL ET LECTURE DE L'URL
+const urlParams = new URLSearchParams(window.location.search);
+let projetActuelId = urlParams.get('id'); // Déclaré une seule fois ici !
 let projetActuelData = null; 
 
+console.log("ID du projet récupéré dans l'URL :", projetActuelId);
+
+// GESTION DU BOUTON RETOUR
 if (btnRetourProjets) {
     btnRetourProjets.addEventListener('click', () => {
         projetActuelId = null; 
         projetActuelData = null;
+        // On nettoie l'URL pour enlever le ?id= si on clique sur Retour
+        window.history.pushState({}, document.title, window.location.pathname);
         vueTaches.classList.add('d-none');
         vueProjets.classList.remove('d-none');
-        chargerProjetsPourTaches(); // Actualise les deux colonnes
+        chargerProjetsPourTaches(); 
     });
 }
-// GESTION DES VUES (PROJETS)
-// Lancer le chargement au démarrage de la page tasks.html
+
+// INITIALISATION AU CHARGEMENT DE LA PAGE
 document.addEventListener('DOMContentLoaded', () => {
-    chargerProjetsPourTaches();
+    if (projetActuelId) {
+        // Cas 1 : On arrive depuis "Mes Projets" en cliquant sur "Tâches"
+        vueProjets.classList.add('d-none');
+        vueTaches.classList.remove('d-none');
+        
+        // On charge les infos du projet, puis les tâches
+        loadMembers().then(() => {
+            if(projetActuelData && projetActuelData.title) {
+                titreProjetActuel.innerHTML = `Tâches : <strong>${projetActuelData.title}</strong>`;
+            }
+            loadTasks(1);
+        });
+    } else {
+        // Cas 2 : On ouvre juste tasks.html via le menu de navigation (pas d'ID)
+        vueTaches.classList.add('d-none');
+        vueProjets.classList.remove('d-none');
+        chargerProjetsPourTaches();
+    }
 });
 
 async function chargerProjetsPourTaches() {
