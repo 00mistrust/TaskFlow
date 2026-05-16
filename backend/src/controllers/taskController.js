@@ -51,11 +51,20 @@ exports.getTasksByProject = async (req, res) => {
 };
 
 // créer une tâche
+// créer une tâche
 exports.createTask = async (req, res) => {
   try {
-    // Le frontend envoie le "project" directement dans req.body
+    // 1. Sécurité : si le frontend envoie une chaîne vide pour "Non assigné", on l'enlève
+    if (!req.body.assignedTo || req.body.assignedTo.trim() === "") {
+        req.body.assignedTo = null;
+    }
+
     const task = new Task(req.body);
     await task.save();
+
+    // 2. 💡 NOUVEAU : On "populate" la tâche avant de la renvoyer au frontend !
+    // Comme ça, le frontend a tout de suite accès à task.assignedTo.email
+    await task.populate('assignedTo', 'name email');
 
     await logActivity('task_created', task.project, req.user.id, `A créé la tâche "${task.title}"`);
 

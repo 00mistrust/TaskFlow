@@ -132,53 +132,127 @@ function renderTasks(tasks) {
     if (!tasks || tasks.length === 0) {
         list.innerHTML = `
             <div class="empty-state col-12">
-                <i class="bi bi-inbox fs-1 mb-3 d-block"></i>
+                <i class="bi bi-inbox fs-1 mb-3 d-block text-muted"></i>
                 <p>Aucune tâche trouvée pour ce projet.</p>
             </div>`;
         return;
     }
+
+    // 1. Récupérer l'ID de l'utilisateur connecté
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const currentUserId = currentUser._id || currentUser.id;
+
     list.innerHTML = tasks.map(task => {
+        console.log("Inspectons la tâche :", task);
         const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
         const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        const assignedName = task.assignedTo ? `<small class="text-muted"><i class="bi bi-person-check me-1"></i>${task.assignedTo.name || task.assignedTo.email}</small>` : `<small class="text-muted"><i class="bi bi-person me-1"></i>Non assigné</small>`;
+        
+// 2. RECHERCHE DE L'EMAIL DU MEMBRE ASSIGNÉ
+        let assignedEmail = null;
+        let assigneeId = null;
+
+        if (task.assignedTo) {
+            // Si le backend envoie un objet (ex: { _id: "...", email: "a@a.com" })
+            if (typeof task.assignedTo === 'object' && task.assignedTo !== null) {
+                assigneeId = task.assignedTo._id || task.assignedTo.id;
+                assignedEmail = task.assignedTo.email || task.assignedTo.name;
+            } 
+            // Si le backend envoie juste une chaîne de caractères (l'ID)
+            else {
+                assigneeId = task.assignedTo;
+            }
+
+            // LE CORRECTIF EST ICI : 
+            // Si la personne assignée est l'utilisateur actuellement connecté, 
+            // on pioche son email directement dans le localStorage !
+            if (assigneeId === currentUserId && currentUser.email) {
+                assignedEmail = currentUser.email;
+            }
+
+            // Fallback : on essaie quand même de chercher dans le select (au cas où c'est assigné à un AUTRE membre)
+            if (!assignedEmail) {
+                const selectMembres = document.getElementById('taskAssignedTo');
+                if (selectMembres) {
+                    const option = Array.from(selectMembres.options).find(opt => opt.value === assigneeId);
+                    if (option && option.value !== "") {
+                        assignedEmail = option.text;
+                    }
+                }
+            }
+            
+            // Si on a vraiment un ID mais qu'on n'a pas pu trouver l'email
+            if (!assignedEmail && assigneeId) {
+                assignedEmail = "Membre assigné (Email masqué)"; 
+            }
+        }
+
+        // Création de l'affichage de l'email
+        const assignedNameHTML = assignedEmail 
+            ? `<div class="d-flex align-items-center mt-3 pt-3 border-top">
+                 <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px;">
+                   <i class="bi bi-envelope-at-fill text-primary"></i>
+                 </div>
+                 <div class="small text-truncate" title="${assignedEmail}">
+                   <span class="text-muted d-block" style="font-size: 0.75rem;">Assigné à</span>
+                   <span class="fw-semibold text-dark">${assignedEmail}</span>
+                 </div>
+               </div>` 
+            : `<div class="d-flex align-items-center mt-3 pt-3 border-top text-muted small">
+                 <i class="bi bi-person-x me-2 fs-5"></i> Non assigné
+               </div>`;
+
+        // 3. GESTION DES PERMISSIONS
+        const isAssignedToMe = (assigneeId === currentUserId);
+        const isAdmin = (task.createdBy === currentUserId);
+        
+        // A-t-il le droit d'éditer la tâche entière ? (Oui s'il est admin, ou s'il n'est PAS assigné à ça)
+        // (Si le prof veut que la personne assignée ne puisse QUE changer le statut, canEditFull doit être faux pour lui)
+        const canEditFull = isAdmin || !isAssignedToMe; 
+
+        // Menu déroulant du statut (tout le monde le voit)
+        let actionButtons = `
+            <select class="form-select form-select-sm w-auto shadow-sm" style="min-width: 110px;" onchange="updateStatus('${task._id}', this.value)">
+                <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
+                <option value="en cours" ${task.status === 'en cours' ? 'selected' : ''}>En cours</option>
+                <option value="terminé" ${task.status === 'terminé' ? 'selected' : ''}>Terminé</option>
+            </select>
+        `;
+
+        // Boutons Modifier/Supprimer (Cachés pour la personne assignée)
+        if (canEditFull) {
+            actionButtons += `
+                <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')" title="Modifier">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm shadow-sm" onclick="deleteTask('${task._id}')" title="Supprimer">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+        }
+
         return `
             <div class="col-md-6 col-lg-4">
                 <div class="card task-card shadow-sm h-100">
-                    <div class="card-body p-4">
+                    <div class="card-body p-4 d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <h6 class="card-title fw-bold mb-0" style="color: #1f2937;">${task.title}</h6>
                             <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
                         </div>
                         ${descriptionText}
-                        <span class="badge ${statusClass} text-white mb-2">${task.status}</span>
-                        <div class="mb-3">${assignedName}</div>
-                        <div class="d-flex gap-2 mt-3 flex-wrap">
-                            <select class="form-select form-select-sm" onchange="updateStatus('${task._id}', this.value)">
-                                <option value="à faire" ${task.status === 'à faire' ? 'selected' : ''}>À faire</option>
-                                <option value="en cours" ${task.status === 'en cours' ? 'selected' : ''}>En cours</option>
-                                <option value="terminé" ${task.status === 'terminé' ? 'selected' : ''}>Terminé</option>
-                            </select>
-                            <select class="form-select form-select-sm" id="assign-${task._id}">
-                                <option value="">Assigner à...</option>
-                            </select>
-                            <button class="btn btn-outline-success btn-sm" onclick="assignTask('${task._id}')" title="Assigner">
-                                <i class="bi bi-person-check"></i>
-                            </button>
-                            <button class="btn btn-outline-primary btn-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteTask('${task._id}')">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                        <span class="badge ${statusClass} text-white mb-2 align-self-start">${task.status}</span>
+                        
+                        <div class="mt-auto">
+                            ${assignedNameHTML}
+                            <div class="d-flex gap-2 mt-3 align-items-center flex-wrap d-flex">
+                                ${actionButtons}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>`;
     }).join('');
-
-    loadMembersForAssign();
 }
 
 function renderPagination(page, totalPages) {
@@ -201,7 +275,6 @@ async function addTask() {
     const description = document.getElementById('taskDescription').value;
     const assignedTo = document.getElementById('taskAssignedTo').value;
     const errorDiv = document.getElementById('formError');
-
     if (!title || !priority || !status) {
         errorDiv.textContent = 'Veuillez remplir tous les champs obligatoires.';
         errorDiv.classList.remove('d-none');
@@ -322,25 +395,29 @@ async function loadMembers() {
         const res = await axios.get(`http://localhost:5000/api/projects/${projetActuelId}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
+        
+        // On récupère le projet proprement
         const project = res.data.data || res.data;
         
-        membersCache = res.data.members || [];
+        // ✅ CORRECTION ICI : On utilise "project" et non "res.data"
+        membersCache = project.members || [];
 
         const filterSelect = document.getElementById('filterMember');
-        filterSelect.innerHTML = '<option value="">Tous les membres</option>'; // Reset
+        if (filterSelect) filterSelect.innerHTML = '<option value="">Tous les membres</option>';
         
         const assignSelect = document.getElementById('taskAssignedTo');
-        if(assignSelect) assignSelect.innerHTML = '<option value="">Sélectionner un membre</option>'; // Reset
+        if (assignSelect) assignSelect.innerHTML = '<option value="">Sélectionner un membre</option>';
 
         membersCache.forEach(member => {
             const option = document.createElement('option');
-            option.value = member._id;
+            option.value = member._id; // Si membersCache était vide, ça ne mettait jamais de _id !
             option.textContent = member.name || member.email;
-            filterSelect.appendChild(option.cloneNode(true));
-            if(assignSelect) assignSelect.appendChild(option);
+            
+            if (filterSelect) filterSelect.appendChild(option.cloneNode(true));
+            if (assignSelect) assignSelect.appendChild(option);
         });
     } catch (err) {
-        console.log('Membres non disponibles pour linstant');
+        console.log('Membres non disponibles pour l\'instant', err);
     }
 }
 
@@ -366,7 +443,8 @@ function loadMembersForAssign() {
             const draft = {
                 title: document.getElementById('taskTitle').value,
                 priority: document.getElementById('taskPriority').value,
-                status: document.getElementById('taskStatus').value
+                status: document.getElementById('taskStatus').value,
+                assignedTo: document.getElementById('taskAssignedTo').value
             };
             localStorage.setItem('draft_' + projetActuelId, JSON.stringify(draft));
         });
