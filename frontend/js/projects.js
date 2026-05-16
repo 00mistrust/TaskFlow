@@ -101,26 +101,25 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
     div.className = "card shadow-sm border-0 mb-1"; 
     
     const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
-    const assigneParText = !isOwner ? `<small class="text-muted"><i class="bi bi-person-fill"></i> Assigné par : <strong>${ownerName}</strong></small><br>` : '';
+    const assigneParText = !isOwner ? `<div class="mb-1"><small class="text-muted"><i class="bi bi-person-fill"></i> Assigné par : <strong>${ownerName}</strong></small></div>` : '';
 
-    // Boutons de modification et suppression combinés de manière fluide pour le propriétaire
+    // Boutons d'administration condensés si propriétaire
     let gestionButtonsHTML = '';
     if (isOwner) {
-        // Encodage optionnel pour éviter les crashs si la description contient des guillemets doubles
         const cleanDesc = (project.description || '').replace(/"/g, '&quot;');
         const cleanTitle = (project.title || '').replace(/"/g, '&quot;');
         const rawDate = project.deadline ? project.deadline.split('T')[0] : '';
 
         gestionButtonsHTML = `
-            <div class="row g-2 mt-1">
+            <div class="row g-1 mt-2">
                 <div class="col-6">
-                    <button class="btn btn-outline-secondary btn-sm w-100" 
+                    <button class="btn btn-outline-secondary btn-xs py-1 px-2 w-100 style-sm small" style="font-size: 0.75rem;"
                         onclick="ouvrirModalModification('${project._id}', '${cleanTitle}', '${cleanDesc}', '${rawDate}')">
                         <i class="bi bi-pencil"></i> Modifier
                     </button>
                 </div>
                 <div class="col-6">
-                    <button class="btn btn-outline-danger btn-sm w-100" 
+                    <button class="btn btn-outline-danger btn-xs py-1 px-2 w-100 small" style="font-size: 0.75rem;"
                         onclick="supprimerProjet('${project._id}', this)">
                         <i class="bi bi-trash"></i> Supprimer
                     </button>
@@ -129,18 +128,19 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
         `;
     }
 
+    // p-3 réduit le padding de la carte pour économiser beaucoup d'espace horizontal/vertical
     div.innerHTML = `
-        <div class="card-body">
-            <h5 class="card-title text-primary fw-bold mb-1">${project.title}</h5>
+        <div class="card-body p-3">
+            <h5 class="card-title text-primary fw-bold mb-1 h6">${project.title}</h5>
             ${assigneParText}
-            <p class="card-text text-muted mb-2">${project.description || 'Pas de description'}</p>
-            <p class="card-text mb-3"><small class="text-secondary"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</small></p>
+            <p class="card-text text-muted mb-2 small" style="line-height: 1.3;">${project.description || 'Pas de description'}</p>
+            <p class="card-text mb-2"><small class="text-secondary" style="font-size: 0.75rem;"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</small></p>
             
             <div class="d-flex gap-2">
-                <a href="tasks.html?id=${project._id}" class="btn btn-primary btn-sm flex-grow-1">
+                <a href="tasks.html?id=${project._id}" class="btn btn-primary btn-sm py-1 px-2 flex-grow-1 small" style="font-size: 0.8rem;">
                     <i class="bi bi-list-task"></i> Tâches
                 </a>
-                <a href="members.html?id=${project._id}" class="btn btn-secondary btn-sm flex-grow-1">
+                <a href="members.html?id=${project._id}" class="btn btn-secondary btn-sm py-1 px-2 flex-grow-1 small" style="font-size: 0.8rem;">
                     <i class="bi bi-people"></i> Membres
                 </a>
             </div>
@@ -150,7 +150,6 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
 
     container.appendChild(div);
 }
-
 // 5. SUPPRIMER UN PROJET
 window.supprimerProjet = async function(id, btnElement) {
     if (!confirm("Voulez-vous vraiment supprimer ce projet ?")) return;
