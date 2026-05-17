@@ -18,7 +18,7 @@ let bsEditModal = null;
 // Gestion des états de pagination locale
 let pageMesProjets = 1;
 let pageProjetsPartages = 1;
-const LIMIT_PAR_PAGE = 3; // Nombre maximum de projets affichés par page simultanément
+const LIMIT_PAR_PAGE = 6; // Nombre maximum de projets affichés par page simultanément
 
 // 2. CHARGEMENT AU DÉMARRAGE
 document.addEventListener('DOMContentLoaded', () => {
@@ -103,7 +103,7 @@ function afficherColonnePaginee(containerId, paginationId, itemsArray, currentPa
     const itemsPage = itemsArray.slice(indexDebut, indexFin);
 
     if (itemsPage.length === 0) {
-        container.innerHTML = `<p class="text-muted small text-center my-4">Aucun projet à afficher.</p>`;
+        container.innerHTML = `<div class="text-muted small text-center my-4 w-100">Aucun projet à afficher.</div>`;
         return;
     }
 
@@ -169,46 +169,54 @@ form.addEventListener('submit', async (e) => {
     }
 });
 
-// 4. DESSINER LE PROJET À L'ÉCRAN
-// 4. DESSINER LE PROJET À L'ÉCRAN (AVEC SÉCURITÉ STRICTE)
+// 4. DESSINER LE PROJET À L'ÉCRAN (COMPACT MODERN FOLDER LOOK)
 function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     const div = document.createElement('div');
-    div.className = "card shadow-sm border mt-1"; 
-    div.style.borderRadius = "12px";
-    div.style.backgroundColor = "#ffffff";
+    div.className = "modern-folder-item shadow-sm"; 
     
     const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
-    const assigneParText = !isOwner ? `<div class="mb-2"><small class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-person-fill"></i> Assigné par : <strong class="text-dark">${ownerName}</strong></small></div>` : '';
+    const assigneParText = !isOwner ? `
+        <div class="text-truncate mb-1" style="max-width: 100%;">
+            <small class="text-muted" style="font-size: 0.72rem;">
+                <i class="bi bi-person-fill"></i> Par : <strong class="text-dark">${ownerName}</strong>
+            </small>
+        </div>` : '';
 
-    // Structure HTML de base de la carte
+    // Compact layout tracking the file-folder design
     div.innerHTML = `
-        <div class="card-body p-3 d-flex flex-column justify-content-between" style="min-height: 160px;">
-            <div>
-                <h5 class="card-title text-dark fw-bold mb-1 h6" style="letter-spacing: -0.2px; font-size: 0.95rem;">${project.title}</h5>
-                ${assigneParText}
-                
-                <p class="card-text text-muted mb-2 small" style="line-height: 1.4; font-size: 0.8rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                    ${project.description || 'Pas de description '}
-                </p>
-                
-                <div class="mb-3">
-                    <span class="badge bg-light text-secondary border py-1 px-2" style="font-size: 0.68rem; border-radius: 6px;">
-                        <i class="bi bi-calendar-event me-1"></i>Délai : ${dateAffichee}
-                    </span>
-                </div>
+        <div>
+            <div class="d-flex align-items-center mb-1">
+                <i class="bi bi-folder-fill text-warning me-2 fs-5"></i>
+                <h5 class="text-dark fw-bold mb-0 text-truncate" style="font-size: 0.9rem;" title="${project.title}">
+                    ${project.title}
+                </h5>
             </div>
             
-            <div class="d-flex gap-1 align-items-center mt-2 pt-2 border-top" style="border-color: #f3f4f6 !important;" id="actions-zone-${project._id}">
-                <a href="tasks.html?id=${project._id}" class="btn text-white btn-sm px-3 py-1 fw-semibold" 
-                    style="font-size: 0.75rem; background-color: #3c3489; border-radius: 6px;">
-                    <i class="bi bi-list-task me-1"></i>Tâches
+            ${assigneParText}
+            
+            <p class="text-muted small mb-0 text-truncate" style="font-size: 0.75rem; max-width: 100%;" title="${project.description || ''}">
+                ${project.description || 'Pas de description'}
+            </p>
+        </div>
+
+        <div>
+            <div class="mb-2 mt-2">
+                <span class="text-secondary d-inline-block text-truncate" style="font-size: 0.7rem; max-width: 100%;">
+                    <i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}
+                </span>
+            </div>
+            
+            <div class="d-flex gap-1 align-items-center pt-2 border-top border-light" id="actions-zone-${project._id}">
+                <a href="tasks.html?id=${project._id}" class="btn text-white btn-sm px-2 py-1 fw-semibold" 
+                    style="font-size: 0.7rem; background-color: #8c2fe9; border-radius: 6px;">
+                    <i class="bi bi-list-task"></i> Tâches
                 </a>
-                <a href="members.html?id=${project._id}" class="btn btn-light btn-sm px-3 py-1 fw-semibold border" 
-                    style="font-size: 0.75rem; border-radius: 6px; color: #4b5563;">
-                    <i class="bi bi-people me-1"></i>Membres
+                <a href="members.html?id=${project._id}" class="btn btn-light btn-sm px-2 py-1 fw-semibold border" 
+                    style="font-size: 0.7rem; border-radius: 6px; color: #4b5563;">
+                    <i class="bi bi-people"></i> Membres
                 </a>
             </div>
         </div>
@@ -216,32 +224,30 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
 
     container.appendChild(div);
 
-    // SÉCURITÉ STRICTE : Les boutons Modifier/Supprimer s'injectent UNIQUEMENT si l'étiquette isOwner est vraie
-    // ET que le conteneur cible est bien la colonne de gauche (mesProjetsList)
+    // Administrative modification buttons injection (Only if owned and on the left container)
     if (isOwner && containerId === 'mesProjetsList') {
         const actionsZone = div.querySelector(`#actions-zone-${project._id}`);
         
         const adminGroup = document.createElement('div');
         adminGroup.className = "d-flex gap-1 ms-auto";
 
-        // Bouton Modifier sécurisé
+        // Edit button setup
         const editBtn = document.createElement('button');
-        editBtn.className = "btn btn-outline-secondary btn-sm px-2 py-1";
-        editBtn.style.fontSize = "0.75rem";
+        editBtn.className = "btn btn-outline-secondary btn-sm px-1.5 py-0.5";
+        editBtn.style.fontSize = "0.7rem";
         editBtn.style.borderRadius = "6px";
         editBtn.title = "Modifier";
         editBtn.innerHTML = `<i class="bi bi-pencil"></i>`;
         
         editBtn.addEventListener('click', () => {
             const rawDate = project.deadline ? project.deadline.split('T')[0] : '';
-            // Appel direct de la fonction globale
             window.ouvrirModalModification(project._id, project.title, project.description || '', rawDate);
         });
 
-        // Bouton Supprimer sécurisé
+        // Delete button setup
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = "btn btn-outline-danger btn-sm px-2 py-1";
-        deleteBtn.style.fontSize = "0.75rem";
+        deleteBtn.className = "btn btn-outline-danger btn-sm px-1.5 py-0.5";
+        deleteBtn.style.fontSize = "0.7rem";
         deleteBtn.style.borderRadius = "6px";
         deleteBtn.title = "Supprimer";
         deleteBtn.innerHTML = `<i class="bi bi-trash"></i>`;
@@ -256,9 +262,8 @@ function ajouterProjetALaVue(containerId, project, isOwner, ownerName) {
     }
 }
 
-// 5. SUPPRIMER UN PROJET (AVEC VÉRIFICATION GLOBALE)
+// 5. SUPPRIMER UN PROJET
 window.supprimerProjet = async function(id, btnElement) {
-    // Vérification de sécurité : on s'assure qu'on ne tente pas de supprimer un projet assigné
     const cardContainer = btnElement.closest('.p-4');
     if (cardContainer && cardContainer.innerHTML.includes("PROJETS PARTAGÉS")) {
         alert("Action interdite : Vous ne pouvez pas supprimer un projet qui vous a été assigné.");
@@ -283,9 +288,8 @@ window.supprimerProjet = async function(id, btnElement) {
     }
 };
 
-// 6. MODIFIER UN PROJET - OUVERTURE DU MODAL ET REMPLISSAGE DES CHAMPS (CORRIGÉ)
+// 6. MODIFIER UN PROJET
 window.ouvrirModalModification = function(id, title, description, deadline) {
-    // Liaison stricte avec les IDs de ton formulaire de modification de ton modal HTML
     const inputId = document.getElementById('editProjectId');
     const inputTitle = document.getElementById('editTitle');
     const inputDesc = document.getElementById('editDescription');
@@ -297,7 +301,6 @@ window.ouvrirModalModification = function(id, title, description, deadline) {
         inputDesc.value = description;
         inputDeadline.value = deadline;
         
-        // Affichage du modal d'édition Bootstrap
         if (bsEditModal) {
             bsEditModal.show();
         } else {
@@ -308,7 +311,6 @@ window.ouvrirModalModification = function(id, title, description, deadline) {
     }
 };
 
-// Événement de soumission du formulaire de mise à jour (PUT)
 if (editForm) {
     editForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -317,6 +319,12 @@ if (editForm) {
         const title = document.getElementById('editTitle').value;
         const description = document.getElementById('editDescription').value;
         const deadline = document.getElementById('editDeadline').value;
+
+        // Visual Validation Guard: Ensure the ID exists before sending
+        if (!id) {
+            alert("Erreur: L'identifiant du projet est manquant. Veuillez rafraîchir la page.");
+            return;
+        }
 
         try {
             const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
@@ -328,12 +336,22 @@ if (editForm) {
                 body: JSON.stringify({ title, description, deadline })
             });
 
+            // Check if the server returned HTML instead of JSON
+            const contentType = response.headers.get("content-type");
+            
             if (response.ok) {
                 if (bsEditModal) bsEditModal.hide();
                 chargerLesProjets(); 
             } else {
-                const errData = await response.json();
-                alert("Erreur de mise à jour: " + (errData.error || errData.message || "Serveur bloqué"));
+                // If the response is JSON, parse it normally. Otherwise, read as raw text.
+                if (contentType && contentType.includes("application/json")) {
+                    const errData = await response.json();
+                    alert("Erreur de mise à jour: " + (errData.error || errData.message || "Serveur bloqué"));
+                } else {
+                    const rawHtmlError = await response.text();
+                    console.error("Le serveur a renvoyé une page HTML d'erreur :", rawHtmlError);
+                    alert(`Erreur Serveur (${response.status}) : Route introuvable ou crash backend. Vérifiez la console.`);
+                }
             }
         } catch (err) {
             console.error("Erreur de modification du projet:", err);
