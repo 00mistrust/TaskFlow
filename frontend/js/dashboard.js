@@ -7,56 +7,126 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // --- 0. RÉCUPÉRATION DE TON ID ET TON NOM ---
+  let currentUserId = null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    currentUserId = String(payload.id || payload._id || payload.userId || '').trim();
+    
+    // On essaie de récupérer ton nom depuis le token ou le localStorage
+    let userName = payload.name || payload.username || payload.prenom || 'Utilisateur';
+    
+    // Si ton script de login l'a sauvegardé dans le localStorage, on le prend en priorité
+    const storedName = localStorage.getItem('userName') || localStorage.getItem('name');
+    if (storedName) {
+      userName = storedName;
+    }
+
+    // On l'injecte dans le HTML
+    const welcomeElement = document.getElementById('dashboardWelcomeName');
+    if (welcomeElement) {
+      welcomeElement.textContent = userName;
+    }
+
+  } catch (e) {
+    console.error("❌ Erreur de lecture du token :", e);
+  }
+
+  // 🔥 C'EST CETTE LIGNE QUI AVAIT DISPARU :
+  let mesProjetsIds = [];
+  let projects = [];
+
   // --- 1. CHARGEMENT DES PROJETS ---
   try {
-    // Remplacement de 127.0.0.1 par localhost pour éviter le bug d'affichage/CORS
     const resProjects = await axios.get('http://localhost:5000/api/projects', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    // Selon la structure de ton backend, les données sont soit dans resProjects.data, soit dans resProjects.data.data
-    const projects = resProjects.data.data || resProjects.data || [];
+    projects = resProjects.data.data || resProjects.data || [];
     document.getElementById('projetsActifs').textContent = projects.length;
 
+    projects.forEach(p => {
+      let ownerId = p.owner ? (typeof p.owner === 'object' ? (p.owner._id || p.owner.id) : p.owner) : '';
+      if (String(ownerId).trim() === currentUserId) {
+        mesProjetsIds.push(String(p._id || p.id));
+      }
+    });
+
   } catch (err) {
-    console.error('Erreur projets:', err);
+    console.error('❌ Erreur projets:', err);
     document.getElementById('projetsActifs').textContent = '0';
   }
 
-  // --- 2. CHARGEMENT DE TOUTES LES TÂCHES (HORS PAGINATION) ---
+  // --- 2. CHARGEMENT DES TÂCHES PROJET PAR PROJET ---
   try {
-    // ATTENTION : On n'envoie PAS de ?page=1&limit=6 pour récupérer l'INTEGRALITÉ des tâches
-    const resTasks = await axios.get('http://localhost:5000/api/tasks', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    // On extrait le tableau brut des tâches
     let allTasks = [];
-    if (resTasks.data && Array.isArray(resTasks.data.data)) {
-      allTasks = resTasks.data.data; // Si ton backend renvoie la structure paginée par défaut même sans paramètres
-    } else if (Array.isArray(resTasks.data)) {
-      allTasks = resTasks.data; // Si ton backend renvoie tout le tableau d'un coup
-    }
 
-    // Si ton backend limite TOUJOURS la réponse à 6 même sans paramètres, 
-    // l'idéal est de vérifier si ton API renvoie une propriété "total" ou "totalItems" dans resTasks.data
-    const totalAssignees = resTasks.data.totalTasks || resTasks.data.total || allTasks.length;
+    const taskPromises = projects.map(async (p) => {
+      const pId = p._id || p.id;
+      try {
+        const resTasks = await axios.get(`http://localhost:5000/api/tasks?project=${pId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const tasksData = resTasks.data.data || resTasks.data || [];
+        if (Array.isArray(tasksData)) {
+          allTasks = allTasks.concat(tasksData);
+        }
+      } catch (taskErr) {
+        console.warn(`Impossible de récupérer les tâches pour le projet ${pId}:`, taskErr.message);
+      }
+    });
 
-    // Calcul précis sur l'ensemble des tâches récupérées
-    const totalTerminees = allTasks.filter(task => task.status === 'terminé').length;
+    await Promise.all(taskPromises);
+
+    // --- 3. FILTRAGE STRICT ---
+    const tachesMeConcernant = allTasks.filter(task => {
+      // Vérification du propriétaire du projet
+      let taskProjectId = task.project ? (typeof task.project === 'object' ? (task.project._id || task.project.id) : task.project) : '';
+      const jeSuisProprioDuProjet = mesProjetsIds.includes(String(taskProjectId));
+
+      // Vérification de l'assignation
+      let assigneeId = task.assignedTo ? (typeof task.assignedTo === 'object' ? (task.assignedTo._id || task.assignedTo.id) : task.assignedTo) : '';
+      const nettonieAssigneeId = String(assigneeId).trim();
+      
+      const mEstAssignee = nettonieAssigneeId === currentUserId;
+      const estNonAssignee = !assigneeId || nettonieAssigneeId === '' || nettonieAssigneeId === 'null' || nettonieAssigneeId === 'undefined';
+
+      // RÈGLE STRICTE : La tâche me concerne UNIQUEMENT si :
+      // - Elle m'est personnellement assignée
+      // - OU elle n'est assignée à PERSONNE mais le projet est à moi
+      return mEstAssignee || (estNonAssignee && jeSuisProprioDuProjet);
+    });
+
+    // --- 4. CALCULS ET COMPTEURS ---
+    const totalAssignees = tachesMeConcernant.length;
+
+    const totalTerminees = tachesMeConcernant.filter(task => {
+      const statusClean = (task.status || '').toLowerCase().trim();
+      return statusClean === 'terminé' || statusClean === 'termine';
+    }).length;
     
     const maintenant = new Date();
-    const totalRetard = allTasks.filter(task => {
-      return task.status !== 'terminé' && task.deadline && new Date(task.deadline) < maintenant;
+    maintenant.setHours(0,0,0,0);
+
+    const totalRetard = tachesMeConcernant.filter(task => {
+      const dateEcheanceRaw = task.dueDate || task.deadline;
+      if (!dateEcheanceRaw) return false;
+
+      const dateEcheance = new Date(dateEcheanceRaw);
+      dateEcheance.setHours(0,0,0,0);
+      
+      const statusClean = (task.status || '').toLowerCase().trim();
+      return statusClean !== 'terminé' && statusClean !== 'termine' && dateEcheance < maintenant;
     }).length;
 
-    // Injection dans le HTML
+    // --- 5. INJECTION DANS LE HTML ---
     document.getElementById('tachesAssignees').textContent = totalAssignees;
     document.getElementById('tachesTerminees').textContent = totalTerminees;
     document.getElementById('tachesRetard').textContent = totalRetard;
 
   } catch (err) {
-    console.error('Erreur tâches:', err);
+    console.error('❌ Erreur globale lors du calcul des tâches:', err);
     document.getElementById('tachesAssignees').textContent = '0';
     document.getElementById('tachesTerminees').textContent = '0';
     document.getElementById('tachesRetard').textContent = '0';

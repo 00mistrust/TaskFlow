@@ -411,26 +411,36 @@
     </div> 
   </div> 
 
-  <div class="modal fade" id="addTaskModal" tabindex="-1">
+<div class="modal fade" id="addTaskModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content shadow" style="border-radius: 16px; border: none;">
         <div class="modal-header" style="background-color: #3c3489; border-radius: 16px 16px 0 0;">
           <h5 class="modal-title text-white fw-bold"><i class="bi bi-plus-circle me-2"></i>Nouvelle tâche</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
+        
         <div class="modal-body p-4">
+          <div id="draftAlert" class="alert alert-success d-none d-flex justify-content-between align-items-center border-0 shadow-sm mb-3" style="background-color: #d1e7dd; color: #0f5132; border-radius: 8px;">
+            <span class="small"><i class="bi bi-hdd-fill me-2"></i>Un brouillon est disponible pour ce projet.</span>
+            <button type="button" class="btn btn-sm btn-success px-4" onclick="restaurerLeBrouillonVisuellement()" style="background-color: #198754; border: none; border-radius: 6px;">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>
+            </button>
+            <button type="button" class="btn p-0 border-0 d-flex align-items-center justify-content-center" onclick="masquerBandeauBrouillon()" title="Ignorer" style="background: transparent; color: #dc3545; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+              <i class="bi bi-x-circle-fill fs-5"></i>
+            </button>
+          </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
-            <input type="text" class="form-control bg-light" id="taskTitle" placeholder="Ex: Créer la page d'accueil">
+            <input type="text" class="form-control bg-light" id="taskTitle" placeholder="Ex: Créer la page d'accueil" oninput="sauvegarderBrouillon()">
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Description</label>
-            <textarea class="form-control bg-light" id="taskDescription" rows="3" placeholder="Description optionnelle..."></textarea>
+            <textarea class="form-control bg-light" id="taskDescription" rows="3" placeholder="Description optionnelle..." oninput="sauvegarderBrouillon()"></textarea>
           </div>
           <div class="row mb-3">
             <div class="col-6">
               <label class="form-label fw-semibold">Priorité <span class="text-danger">*</span></label>
-              <select class="form-select bg-light" id="taskPriority">
+              <select class="form-select bg-light" id="taskPriority" onchange="sauvegarderBrouillon()">
                 <option value="">-- Choisir --</option>
                 <option value="haute">🔴 Haute</option>
                 <option value="moyenne">🟡 Moyenne</option>
@@ -439,7 +449,7 @@
             </div>
             <div class="col-6">
               <label class="form-label fw-semibold">Statut <span class="text-danger">*</span></label>
-              <select class="form-select bg-light" id="taskStatus">
+              <select class="form-select bg-light" id="taskStatus" onchange="sauvegarderBrouillon()">
                 <option value="">-- Choisir --</option>
                 <option value="à faire">À faire</option>
                 <option value="en cours">En cours</option>
@@ -447,19 +457,25 @@
               </select>
             </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Assigner à</label>
-            <select class="form-select bg-light" id="taskAssignedTo">
-              <option value="">-- Non assigné --</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Date limite <span class="text-danger"></span></label>
-            <div class="input-group">
-              <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
-              <input type="date" class="form-control bg-light" id="taskDueDate">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Assigner à</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                <select class="form-select bg-light" id="taskAssignedTo" onchange="sauvegarderBrouillon()">
+                  <option value="">-- Non assigné --</option>
+                </select>
+              </div>
             </div>
-          </div>          
+            
+            <div class="col-md-6 mt-3 mt-md-0">
+              <label class="form-label fw-semibold">Date limite</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                <input type="date" class="form-control bg-light" id="taskDueDate" oninput="sauvegarderBrouillon()">
+              </div>
+            </div>
+          </div>      
           <div id="formError" class="alert alert-danger d-none"></div>
         </div>
         <div class="modal-footer border-top-0 px-4 pb-4">
@@ -473,58 +489,58 @@
   </div>
 
   <div class="modal fade" id="editTaskModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content shadow" style="border-radius: 16px; border: none;">
-      <div class="modal-header" style="background-color: #4f46e5; border-radius: 16px 16px 0 0;">
-        <h5 class="modal-title text-white fw-bold"><i class="bi bi-pencil-square me-2"></i>Modifier la tâche</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <input type="hidden" id="editTaskId">
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
-          <input type="text" class="form-control bg-light" id="editTaskTitle">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow" style="border-radius: 16px; border: none;">
+        <div class="modal-header" style="background-color: #4f46e5; border-radius: 16px 16px 0 0;">
+          <h5 class="modal-title text-white fw-bold"><i class="bi bi-pencil-square me-2"></i>Modifier la tâche</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Description</label>
-          <textarea class="form-control bg-light" id="editTaskDescription" rows="3" placeholder="Description optionnelle..."></textarea>
-        </div>
-        <div class="row mb-3">
-          <div class="col-6">
-            <label class="form-label fw-semibold">Priorité <span class="text-danger">*</span></label>
-            <select class="form-select bg-light" id="editTaskPriority">
-              <option value="haute">🔴 Haute</option>
-              <option value="moyenne">🟡 Moyenne</option>
-              <option value="basse">🟢 Basse</option>
-            </select>
+        <div class="modal-body p-4">
+          <input type="hidden" id="editTaskId">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
+            <input type="text" class="form-control bg-light" id="editTaskTitle">
           </div>
-          <div class="col-6">
-            <label class="form-label fw-semibold">Statut <span class="text-danger">*</span></label>
-            <select class="form-select bg-light" id="editTaskStatus">
-              <option value="à faire">À faire</option>
-              <option value="en cours">En cours</option>
-              <option value="terminé">Terminé</option>
-            </select>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control bg-light" id="editTaskDescription" rows="3" placeholder="Description optionnelle..."></textarea>
           </div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Date limite</label>
-          <div class="input-group">
-            <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
-            <input type="date" class="form-control bg-light" id="editTaskDueDate">
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Priorité <span class="text-danger">*</span></label>
+              <select class="form-select bg-light" id="editTaskPriority">
+                <option value="haute">🔴 Haute</option>
+                <option value="moyenne">🟡 Moyenne</option>
+                <option value="basse">🟢 Basse</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Statut <span class="text-danger">*</span></label>
+              <select class="form-select bg-light" id="editTaskStatus">
+                <option value="à faire">À faire</option>
+                <option value="en cours">En cours</option>
+                <option value="terminé">Terminé</option>
+              </select>
+            </div>
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Date limite</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+              <input type="date" class="form-control bg-light" id="editTaskDueDate">
+            </div>
+          </div>
+          <div id="editFormError" class="alert alert-danger d-none"></div>
         </div>
-        <div id="editFormError" class="alert alert-danger d-none"></div>
-      </div>
-      <div class="modal-footer border-top-0 px-4 pb-4">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-        <button type="button" class="btn btn-primary px-4" style="background-color: #4f46e5; border: none;" onclick="saveEdit()">
-          <i class="bi bi-check2 me-1"></i>Sauvegarder
-        </button>
+        <div class="modal-footer border-top-0 px-4 pb-4">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary px-4" style="background-color: #4f46e5; border: none;" onclick="saveEdit()">
+            <i class="bi bi-check2 me-1"></i>Sauvegarder
+          </button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
