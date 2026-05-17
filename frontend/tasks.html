@@ -43,6 +43,55 @@
       padding: 60px 20px;
       color: #9ca3af;
     }
+   /* Clean grid container layout */
+    #grilleProjets, #mesTachesAssigneesList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      padding: 8px 4px;
+    }
+
+    /* Modern Minimalist Folder Style */
+    .modern-folder-item {
+      position: relative;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0 10px 10px 10px;
+      padding: 12px 14px;
+      margin-top: 10px; /* Space for the subtle tab folder look */
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 115px; /* Compact structural height */
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+    }
+
+    /* Structural Folder Tab */
+    .modern-folder-item::before {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: -1px;
+      height: 10px;
+      width: 65px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-bottom: none;
+      border-radius: 6px 8px 0 0;
+    }
+
+    /* Hover States - Soft Depth */
+    .modern-folder-item:hover {
+      transform: translateY(-2px);
+      border-color: #3c3489;
+      box-shadow: 0 4px 12px rgba(60, 52, 137, 0.08) !important;
+    }
+
+    /* Adjusting grid row utility behaviors */
+    #vueProjets .row > .col-md-6 {
+      padding-bottom: 20px;
+    }
   </style>
 </head>
 <body class="bg-light">

@@ -115,18 +115,36 @@ async function chargerProjetsPourTaches() {
                 const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
 
                 // Structure HTML d'une carte projet simplifiée pour l'onglet Tâches
+                // Structure HTML d'une carte projet modifiée en Dossier (Folder)
+                // Streamlined horizontal compact folder element
                 const cardHTML = `
-                    <div class="card shadow-sm border-0 mb-3 task-card">
-                        <div class="card-body p-3">
-                            <h5 class="card-title text-primary fw-bold h6 mb-1">${project.title}</h5>
-                            ${ownerId !== currentUserId ? `<p class="mb-1 small text-muted"><i class="bi bi-person"></i> Par : ${ownerName}</p>` : ''}
-                            <p class="card-text text-muted small mb-2 text-truncate">${project.description || 'Pas de description'}</p>
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <span class="text-secondary style="font-size: 0.75rem;"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</span>
-                                <button class="btn btn-sm btn-primary px-3" onclick="ouvrirVueTaches('${project._id}', '${project.title.replace(/'/g, "\\'")}')">
-                                    <i class="bi bi-folder2-open me-1"></i> Gérer
-                                </button>
+                    <div class="modern-folder-item shadow-sm" onclick="ouvrirVueTaches('${project._id}', '${project.title.replace(/'/g, "\\'")}')">
+                        <div>
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="bi bi-folder-fill text-warning me-2 fs-5"></i>
+                                <h5 class="text-dark fw-bold mb-0 text-truncate" style="font-size: 0.9rem;" title="${project.title}">
+                                    ${project.title}
+                                </h5>
                             </div>
+                            
+                            ${ownerId !== currentUserId ? `
+                                <p class="mb-1 text-muted text-truncate" style="font-size: 0.75rem;">
+                                    <i class="bi bi-person"></i> ${ownerName}
+                                </p>
+                            ` : ''}
+                            
+                            <p class="text-muted small mb-0 text-truncate" style="font-size: 0.75rem; max-width: 100%;">
+                                ${project.description || 'Pas de description'}
+                            </p>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-light">
+                            <span class="text-secondary" style="font-size: 0.7rem;">
+                                <i class="bi bi-calendar-event"></i> ${dateAffichee}
+                            </span>
+                            <span class="badge rounded-pill bg-light text-primary border border-primary-subtle fw-medium px-2 py-1" style="font-size: 0.65rem;">
+                                Ouvrir <i class="bi bi-chevron-right ms-0.5"></i>
+                            </span>
                         </div>
                     </div>
                 `;
