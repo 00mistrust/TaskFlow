@@ -1,22 +1,25 @@
 TaskFlow - Collaborative Project Management
 
 #L'équipe :
-Marwane Taouil - Project Manager & Developer ;@MR12006 
 
-Marwa El Ouaai - Developer ;@00mistrust
+Marwane Taouil 24054661 @MR12006
 
-Lina ABAICH - Developer  ;@abaichlina
+Marwa El Ouaai 24053872 @00mistrust
 
-Salsabil ADIM- Developer ; @salsabiladim
+Lina ABAICH  24055215 @abaichlina
 
-Samir TOUIMI BENJELLOUN -Developer ;@dream21edit-star
+Salsabil ADIM 24055139 @salsabiladim
+
+Samir TOUIMI BENJELLOUN 24051951 @dream21edit-star
 
 
 #Feature Distribution
+note: this is only the initial feature distribution
+
 Marwane: F1- authentification et F5 - dashboard
 Marwa: F3 -gestion des taches et f6 -filtrage,recherche,pagination
 Lina: F4- assignation des tachees et F9- historique 
-Salsabil: F2- creation et gestion des projetset F8- gestion des membres
+Salsabil: F2- creation et gestion des projets et F8- gestion des membres
 Samir : F7- sauvegarde des brouillons et F10 - notifications
 
 -----------ETAPES POUR LANCER L'APP-----------------
