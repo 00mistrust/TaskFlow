@@ -190,49 +190,57 @@
       <div class="row g-4"> 
         
         <div class="col-md-6">
-          <div class="workspace-panel border-start border-4 border-primary">
-            <div class="d-flex align-items-center mb-4">
-              <div class="p-3 bg-light rounded-3 shadow-sm d-inline-block me-3">
-                <i class="bi bi-grid-1x2-fill fs-3" style="color: #3c3489;"></i>
-              </div>
-              <div>
-                <div class="d-flex align-items-center gap-2">
-                  <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Mes projets</h2>
-                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">Personnel</span>
+          <div class="workspace-panel border-start border-4 border-primary d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex align-items-center mb-4">
+                <div class="p-3 bg-light rounded-3 shadow-sm d-inline-block me-3">
+                  <i class="bi bi-grid-1x2-fill fs-3" style="color: #3c3489;"></i>
                 </div>
-                <p class="text-muted mb-0 small">Mes projets,mon controle sur les taches</p>
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Mes Projets</h2>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">Personnel</span>
+                  </div>
+                  <p class="text-muted mb-0 small">Ma gestion des tâches pour mes projets.</p>
+                </div>
+              </div>
+              
+              <div class="row g-3" id="grilleProjets">
+                <div class="text-center text-muted mt-5">
+                  <div class="spinner-border text-primary" role="status"></div>
+                  <p class="mt-2">Chargement des projets...</p>
+                </div>
               </div>
             </div>
-            
-            <div class="row g-3" id="grilleProjets">
-              <div class="text-center text-muted mt-5">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2">Chargement des projets...</p>
-              </div>
-            </div>
+
+            <div id="paginationProjetsGauche" class="d-flex justify-content-center align-items-center gap-2 mt-4 pt-3 border-top border-light"></div>
           </div>
         </div>
 
         <div class="col-md-6">
-          <div class="workspace-panel border-start border-4 border-info">
-            <div class="d-flex align-items-center mb-4">
-              <div class="p-3 bg-light rounded-3 shadow-sm d-inline-block me-3">
-                <i class="bi bi-person-check-fill fs-3 text-info"></i>
-              </div>
-              <div>
-                <div class="d-flex align-items-center gap-2">
-                  <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Projets Assignés</h2>
-                  <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small">Partagé</span>
+          <div class="workspace-panel border-start border-4 border-info d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex align-items-center mb-4">
+                <div class="p-3 bg-light rounded-3 shadow-sm d-inline-block me-3">
+                  <i class="bi bi-person-check-fill fs-3 text-info"></i>
                 </div>
-                <p class="text-muted mb-0 small">Toutes les tâches qui vous sont confiées.</p>
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Projets Assignés</h2>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small">Partagé</span>
+                  </div>
+                  <p class="text-muted mb-0 small">Toutes les tâches qui vous sont confiées.</p>
+                </div>
+              </div>
+
+              <div class="row g-3" id="mesTachesAssigneesList">
+                <div class="text-center text-muted mt-5">
+                  <p class="small">Sélectionnez un projet à gauche ou consultez vos tâches en cours.</p>
+                </div>
               </div>
             </div>
 
-            <div class="row g-3" id="mesTachesAssigneesList">
-              <div class="text-center text-muted mt-5">
-                <p class="small">Sélectionnez un projet à gauche ou consultez vos tâches en cours.</p>
-              </div>
-            </div>
+            <div id="paginationProjetsDroite" class="d-flex justify-content-center align-items-center gap-2 mt-4 pt-3 border-top border-light"></div>
           </div>
         </div>
 

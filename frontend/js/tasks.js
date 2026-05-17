@@ -2,6 +2,9 @@
 const BASE_URL = 'http://localhost:5000/api/tasks';
 const token = localStorage.getItem('token');
 let currentPage = 1;
+let pageProjetsGauche = 1;
+let pageProjetsDroite = 1;
+const LIMIT_PROJETS = 6;
 
 if (!token) window.location.href = 'login.html';
 
@@ -69,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
 async function chargerProjetsPourTaches() {
     if (!grilleProjets) return;
 
-    // 1. Extraction propre de l'ID utilisateur connecté depuis le Token
     let currentUserId = null;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -86,90 +88,129 @@ async function chargerProjetsPourTaches() {
 
         if (response.ok) {
             const result = await response.json();
-            const projects = result.data || result || [];
+            const allProjects = result.data || result || [];
 
-            // Sélection des deux conteneurs (Gauche et Droite)
-            const gaucheContainer = document.getElementById('grilleProjets'); // Colonne de gauche
-            const droiteContainer = document.getElementById('mesTachesAssigneesList'); // Colonne de droite
+            const gaucheContainer = document.getElementById('grilleProjets'); 
+            const droiteContainer = document.getElementById('mesTachesAssigneesList'); 
 
-            // On vide les conteneurs avant de les remplir
             gaucheContainer.innerHTML = '';
             droiteContainer.innerHTML = '';
 
-            let hasOwned = false;
-            let hasAssigned = false;
+            // Split arrays to paginate them individually
+            const ownedProjects = [];
+            const sharedProjects = [];
 
-            projects.forEach(project => {
-                // Détermination de l'ID du propriétaire
-                let ownerId = '';
-                if (project.owner) {
-                    ownerId = typeof project.owner === 'object' ? (project.owner._id || project.owner.id) : project.owner;
-                }
+            allProjects.forEach(project => {
+                let ownerId = project.owner ? (typeof project.owner === 'object' ? (project.owner._id || project.owner.id) : project.owner) : '';
                 ownerId = String(ownerId).trim();
-                
-                const ownerName = project.owner && typeof project.owner === 'object' 
-                    ? (project.owner.name || project.owner.nom || 'Quelqu\'un') 
-                    : 'Inconnu';
 
-                // Formatage de la date limite
-                const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
-
-                // Structure HTML d'une carte projet simplifiée pour l'onglet Tâches
-                // Structure HTML d'une carte projet modifiée en Dossier (Folder)
-                // Streamlined horizontal compact folder element
-                const cardHTML = `
-                    <div class="modern-folder-item shadow-sm" onclick="ouvrirVueTaches('${project._id}', '${project.title.replace(/'/g, "\\'")}')">
-                        <div>
-                            <div class="d-flex align-items-center mb-1">
-                                <i class="bi bi-folder-fill text-warning me-2 fs-5"></i>
-                                <h5 class="text-dark fw-bold mb-0 text-truncate" style="font-size: 0.9rem;" title="${project.title}">
-                                    ${project.title}
-                                </h5>
-                            </div>
-                            
-                            ${ownerId !== currentUserId ? `
-                                <p class="mb-1 text-muted text-truncate" style="font-size: 0.75rem;">
-                                    <i class="bi bi-person"></i> ${ownerName}
-                                </p>
-                            ` : ''}
-                            
-                            <p class="text-muted small mb-0 text-truncate" style="font-size: 0.75rem; max-width: 100%;">
-                                ${project.description || 'Pas de description'}
-                            </p>
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-light">
-                            <span class="text-secondary" style="font-size: 0.7rem;">
-                                <i class="bi bi-calendar-event"></i> ${dateAffichee}
-                            </span>
-                            <span class="badge rounded-pill bg-light text-primary border border-primary-subtle fw-medium px-2 py-1" style="font-size: 0.65rem;">
-                                Ouvrir <i class="bi bi-chevron-right ms-0.5"></i>
-                            </span>
-                        </div>
-                    </div>
-                `;
-
-                // Condition magique : C'est le mien -> Gauche, Je suis invité -> Droite
                 if (currentUserId && ownerId && currentUserId === ownerId) {
-                    gaucheContainer.insertAdjacentHTML('beforeend', cardHTML);
-                    hasOwned = true;
+                    ownedProjects.push(project);
                 } else {
-                    droiteContainer.insertAdjacentHTML('beforeend', cardHTML);
-                    hasAssigned = true;
+                    sharedProjects.push(project);
                 }
             });
 
-            // Gérer les cas où une des colonnes est vide
-            if (!hasOwned) {
+            // --- PAGINATION FOR LEFT PANEL (OWNED) ---
+            const totalPagesGauche = Math.ceil(ownedProjects.length / LIMIT_PROJETS) || 1;
+            const startGauche = (pageProjetsGauche - 1) * LIMIT_PROJETS;
+            const paginatedOwned = ownedProjects.slice(startGauche, startGauche + LIMIT_PROJETS);
+
+            if (paginatedOwned.length === 0 && ownedProjects.length > 0) {
+                pageProjetsGauche = 1;
+                chargerProjetsPourTaches();
+                return;
+            }
+
+            if (paginatedOwned.length === 0) {
                 gaucheContainer.innerHTML = '<div class="text-muted small py-3 text-center">Vous n\'avez créé aucun projet.</div>';
+            } else {
+                paginatedOwned.forEach(project => {
+                    gaucheContainer.insertAdjacentHTML('beforeend', générerHTMLDossier(project, currentUserId));
+                });
             }
-            if (!hasAssigned) {
+            générerPaginationPanel('paginationProjetsGauche', pageProjetsGauche, totalPagesGauche, 'changerPageGauche');
+
+            // --- PAGINATION FOR RIGHT PANEL (SHARED) ---
+            const totalPagesDroite = Math.ceil(sharedProjects.length / LIMIT_PROJETS) || 1;
+            const startDroite = (pageProjetsDroite - 1) * LIMIT_PROJETS;
+            const paginatedShared = sharedProjects.slice(startDroite, startDroite + LIMIT_PROJETS);
+
+            if (paginatedShared.length === 0 && sharedProjects.length > 0) {
+                pageProjetsDroite = 1;
+                chargerProjetsPourTaches();
+                return;
+            }
+
+            if (paginatedShared.length === 0) {
                 droiteContainer.innerHTML = '<div class="text-muted small py-3 text-center">Aucun projet ne vous a été partagé.</div>';
+            } else {
+                paginatedShared.forEach(project => {
+                    droiteContainer.insertAdjacentHTML('beforeend', générerHTMLDossier(project, currentUserId));
+                });
             }
+            générerPaginationPanel('paginationProjetsDroite', pageProjetsDroite, totalPagesDroite, 'changerPageDroite');
         }
     } catch (error) {
         console.error("Erreur lors du chargement des projets sur la page des tâches :", error);
     }
+}
+
+// Helper to keep code clean and dry
+function générerHTMLDossier(project, currentUserId) {
+    let ownerId = project.owner ? (typeof project.owner === 'object' ? (project.owner._id || project.owner.id) : project.owner) : '';
+    ownerId = String(ownerId).trim();
+    const ownerName = project.owner && typeof project.owner === 'object' ? (project.owner.name || project.owner.nom || 'Quelqu\'un') : 'Inconnu';
+    const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
+
+    return `
+        <div class="modern-folder-item shadow-sm" onclick="ouvrirVueTaches('${project._id}', '${project.title.replace(/'/g, "\\'")}')">
+            <div>
+                <div class="d-flex align-items-center mb-1">
+                    <i class="bi bi-folder-fill text-warning me-2 fs-5"></i>
+                    <h5 class="text-dark fw-bold mb-0 text-truncate" style="font-size: 0.9rem;" title="${project.title}">
+                        ${project.title}
+                    </h5>
+                </div>
+                ${ownerId !== currentUserId ? `<p class="mb-1 text-muted text-truncate" style="font-size: 0.75rem;"><i class="bi bi-person"></i> ${ownerName}</p>` : ''}
+                <p class="text-muted small mb-0 text-truncate" style="font-size: 0.75rem; max-width: 100%;">${project.description || 'Pas de description'}</p>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-light">
+                <span class="text-secondary" style="font-size: 0.7rem;"><i class="bi bi-calendar-event"></i> ${dateAffichee}</span>
+                <span class="badge rounded-pill bg-light text-primary border border-primary-subtle fw-medium px-2 py-1" style="font-size: 0.65rem;">Ouvrir <i class="bi bi-chevron-right ms-0.5"></i></span>
+            </div>
+        </div>
+    `;
+}
+
+// Render utility for panels pagination
+function générerPaginationPanel(containerId, currentPage, totalPages, handlerName) {
+    const div = document.getElementById(containerId);
+    if (!div) return;
+    if (totalPages <= 1) {
+        div.innerHTML = '';
+        return;
+    }
+    div.innerHTML = `
+        <button class="btn btn-sm btn-outline-secondary pagination-btn" onclick="${handlerName}(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="text-muted small mx-2">Page ${currentPage} / ${totalPages}</span>
+        <button class="btn btn-sm btn-outline-secondary pagination-btn" onclick="${handlerName}(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    `;
+}
+
+// Global execution hooks for button actions
+window.changerPageGauche = function(newPage) {
+    pageProjetsGauche = newPage;
+    chargerProjetsPourTaches();
+}
+
+window.changerPageDroite = function(newPage) {
+    pageProjetsDroite = newPage;
+    chargerProjetsPourTaches();
 }
 
 function ouvrirVueTaches(projectId, projectTitle) {
