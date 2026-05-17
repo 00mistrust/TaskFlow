@@ -21,12 +21,12 @@ async function loadMembers() {
         });
         
         const project = res.data.data || res.data;
-        
-        // 👉 C'EST ICI QUE LE TITRE DOIT S'AFFICHER !
-        const titleElement = document.getElementById('projectTitle');
-        if (titleElement && project.title) {
-            titleElement.textContent = `- ${project.title}`;
-        }
+
+//  Injection du nom du projet sous "Membres actuels"
+const titleElement = document.getElementById('projectTitle');
+if (titleElement && project.title) {
+    titleElement.innerHTML = `<i class="bi bi-folder me-1"></i> Projet : <span class="text-warning fw-bold">${project.title}</span>`;
+}
         // ------------------------------------------
 
         const members = project.members || [];

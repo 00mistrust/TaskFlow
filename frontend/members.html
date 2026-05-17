@@ -177,8 +177,13 @@
 </nav>
 
     <div class="container-content">
-        <h2 class="section-title"> Gestion des Membres</h2>
 
+        <h2 class="section-title">Gestion des Membres <span class="text-muted fs-3 fw-normal"></span></h2>
+                <div class="mb-3">
+            <a id="backToProjectsBtn" href="projects.html" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left-short"></i> Retour aux projets
+            </a>
+        </div>
         <div class="card-custom">
             <h5 class="fw-bold mb-3">Inviter un nouveau membre</h5>
             <p class="text-muted small">Entrez l'adresse email pour ajouter un collaborateur au projet.</p>
@@ -196,14 +201,18 @@
         </div>
 
         <div class="card-custom">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="fw-bold mb-0">Membres actuels</h5>
-                <span class="badge bg-secondary rounded-pill p-2">0 membres</span>
+          <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+              <h5 class="fw-bold mb-1">Membres actuels</h5>
+                <div id="projectTitle" class="text-muted small fw-medium"></div>
             </div>
-            <div id="membersList" class="text-center py-4 text-muted">
-                <i class="bi bi-arrow-repeat spin me-2"></i> Chargement des membres...
-            </div>
+            <span class="badge bg-secondary rounded-pill p-2">0 membres</span>
         </div>
+    
+        <div id="membersList" class="text-center py-4 text-muted">
+          <i class="bi bi-arrow-repeat spin me-2"></i> Chargement des membres...
+        </div>
+      </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
