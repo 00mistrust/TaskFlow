@@ -40,15 +40,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('projetsActifs').textContent = '0';
   }
 
-  // --- 2. CHARGEMENT DES TÂCHES PROJET PAR PROJET (CONTOURNEMENT DE L'ERREUR 400) ---
+  // --- 2. CHARGEMENT DES TÂCHES PROJET PAR PROJET ---
   try {
     let allTasks = [];
 
-    // On crée une liste de requêtes (une par projet) pour s'exécuter en parallèle
     const taskPromises = projects.map(async (p) => {
       const pId = p._id || p.id;
       try {
-        // 💡 NOTE : Si ton backend utilise un autre nom de paramètre, change '?project=' par '?projectId='
         const resTasks = await axios.get(`http://localhost:5000/api/tasks?project=${pId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -62,33 +60,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    // On attend que toutes les requêtes de tous les projets soient terminées
     await Promise.all(taskPromises);
 
-    // --- 3. FILTRAGE STRICT SELON TES CRITÈRES ---
+    // --- 3. 🔥 NOUVEAU FILTRAGE STRICT CORRIGÉ ---
     const tachesMeConcernant = allTasks.filter(task => {
-      // Vérification du projet de la tâche
+      // Vérification du propriétaire du projet
       let taskProjectId = task.project ? (typeof task.project === 'object' ? (task.project._id || task.project.id) : task.project) : '';
       const jeSuisProprioDuProjet = mesProjetsIds.includes(String(taskProjectId));
 
-      // Vérification de l'assignation de la tâche
+      // Vérification de l'assignation
       let assigneeId = task.assignedTo ? (typeof task.assignedTo === 'object' ? (task.assignedTo._id || task.assignedTo.id) : task.assignedTo) : '';
-      const mEstAssignee = String(assigneeId).trim() === currentUserId;
+      const nettonieAssigneeId = String(assigneeId).trim();
+      
+      const mEstAssignee = nettonieAssigneeId === currentUserId;
+      const estNonAssignee = !assigneeId || nettonieAssigneeId === '' || nettonieAssigneeId === 'null' || nettonieAssigneeId === 'undefined';
 
-      // On garde la tâche si elle est dans mes projets OU si elle m'est assignée
-      return jeSuisProprioDuProjet || mEstAssignee;
+      // RÈGLE STRICTE : La tâche me concerne UNIQUEMENT si :
+      // - Elle m'est personnellement assignée
+      // - OU elle n'est assignée à PERSONNE mais le projet est à moi
+      return mEstAssignee || (estNonAssignee && jeSuisProprioDuProjet);
     });
 
     // --- 4. CALCULS ET COMPTEURS ---
     const totalAssignees = tachesMeConcernant.length;
 
-    // Compte toutes les tâches terminées qui te concernent
     const totalTerminees = tachesMeConcernant.filter(task => {
       const statusClean = (task.status || '').toLowerCase().trim();
       return statusClean === 'terminé' || statusClean === 'termine';
     }).length;
     
-    // Compte les tâches en retard
     const maintenant = new Date();
     maintenant.setHours(0,0,0,0);
 
