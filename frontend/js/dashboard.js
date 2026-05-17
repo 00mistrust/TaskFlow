@@ -8,16 +8,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- 0. RÉCUPÉRATION DE TON ID UTILISATEUR ---
+ // --- 0. RÉCUPÉRATION DE TON ID ET TON NOM ---
   let currentUserId = null;
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     currentUserId = String(payload.id || payload._id || payload.userId || '').trim();
+    
+    // 💡 NOUVEAUTÉ : On essaie de récupérer ton nom depuis le token ou le localStorage
+    let userName = payload.name || payload.username || payload.prenom || 'Utilisateur';
+    
+    // Si ton script de login l'a sauvegardé dans le localStorage, on le prend en priorité
+    const storedName = localStorage.getItem('userName') || localStorage.getItem('name');
+    if (storedName) {
+      userName = storedName;
+    }
+
+    // On l'injecte dans le HTML
+    const welcomeElement = document.getElementById('dashboardWelcomeName');
+    if (welcomeElement) {
+      welcomeElement.textContent = userName;
+    }
+
   } catch (e) {
     console.error("❌ Erreur de lecture du token :", e);
-  }
-
-  let mesProjetsIds = [];
-  let projects = [];
+  }let projects = [];
 
   // --- 1. CHARGEMENT DES PROJETS ---
   try {
