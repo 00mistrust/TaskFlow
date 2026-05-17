@@ -1,7 +1,7 @@
 const Project = require('../models/Project');
 const User = require('../models/user'); 
+const Task = require('../models/task');
 
-// Récupérer tous les projets 
 // Récupérer tous les projets (propriétaire OU membre)
 exports.getAllProjects = async (req, res) => {
     try {
@@ -119,14 +119,22 @@ exports.removeMember = async (req, res) => {
             return res.status(403).json({ error: 'Only the owner can modify project members' });
         }
 
-        project.members = project.members.filter(m => m.toString() !== req.params.userId);
+        // CORRECTION 1: On utilise req.params.memberId au lieu de userId
+        project.members = project.members.filter(m => m.toString() !== req.params.memberId);
         await project.save();
 
-        res.json({ message: 'Member removed successfully' });
+        // CORRECTION 2: On utilise req.params.memberId au lieu de userId
+        await Task.deleteMany({
+            project: req.params.id,
+            assignedTo: req.params.memberId
+        });
+
+        res.json({ message: 'Membre et ses tâches retirés avec succès' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
+
 // Supprimer un projet
 exports.deleteProject = async (req, res) => {
     try {

@@ -642,7 +642,13 @@ window.restaurerLeBrouillonVisuellement = function() {
     
     brouillonEnAttente = null; 
 };
-
+window.masquerBandeauBrouillon = function() {
+    const alertDiv = document.getElementById('draftAlert');
+    if (alertDiv) alertDiv.classList.add('d-none');
+    
+    // On vide la mémoire tampon pour cette ouverture,
+    brouillonEnAttente = null; 
+};
 async function pollNotifications() {
     try {
         const res = await axios.get('http://localhost:5000/api/notifications', {

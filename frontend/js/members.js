@@ -42,7 +42,7 @@ if (titleElement && project.title) {
             return;
         }
 
-        // 👉 LE BOUTON ASSIGNER A ÉTÉ AJOUTÉ ICI :
+        // LE BOUTON ASSIGNER 
         listDiv.innerHTML = members.map(member => `
             <div class="d-flex justify-content-between align-items-center border-bottom py-2">
                 <div class="text-start">
@@ -93,13 +93,23 @@ document.getElementById('addMemberForm').addEventListener('submit', async (e) =>
 window.removeMember = async function(memberId) {
     if (!confirm("Êtes-vous sûr de vouloir retirer ce membre du projet ?")) return;
 
+    // 1. We store the URL in a variable first so we can look at it
+    const requestUrl = `${BASE_URL}/${PROJECT_ID}/members/${memberId}`;
+    
+    // 2. Print exactly what variables we have
+    console.log("🛠️ PROJECT_ID :", PROJECT_ID);
+    console.log("🛠️ memberId :", memberId);
+    console.log("🚀 URL appelée :", requestUrl);
+
     try {
-        await axios.delete(`${BASE_URL}/${PROJECT_ID}/members/${memberId}`, {
+        await axios.delete(requestUrl, {
             headers: { Authorization: `Bearer ${token}` }
         });
         alert("Membre retiré !");
         loadMembers(); 
     } catch (err) {
+        // 3. Print the exact error if Axios fails
+        console.error(" Erreur de la requête Axios :", err);
         alert(err.response?.data?.msg || err.response?.data?.error || "Erreur lors de la suppression");
     }
 };
