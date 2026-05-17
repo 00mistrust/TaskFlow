@@ -7,14 +7,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // --- 0. RÉCUPÉRATION DE TON ID UTILISATEUR ---
- // --- 0. RÉCUPÉRATION DE TON ID ET TON NOM ---
+  // --- 0. RÉCUPÉRATION DE TON ID ET TON NOM ---
   let currentUserId = null;
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     currentUserId = String(payload.id || payload._id || payload.userId || '').trim();
     
-    // 💡 NOUVEAUTÉ : On essaie de récupérer ton nom depuis le token ou le localStorage
+    // On essaie de récupérer ton nom depuis le token ou le localStorage
     let userName = payload.name || payload.username || payload.prenom || 'Utilisateur';
     
     // Si ton script de login l'a sauvegardé dans le localStorage, on le prend en priorité
@@ -31,7 +30,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   } catch (e) {
     console.error("❌ Erreur de lecture du token :", e);
-  }let projects = [];
+  }
+
+  // 🔥 C'EST CETTE LIGNE QUI AVAIT DISPARU :
+  let mesProjetsIds = [];
+  let projects = [];
 
   // --- 1. CHARGEMENT DES PROJETS ---
   try {
@@ -76,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await Promise.all(taskPromises);
 
-    // --- 3. 🔥 NOUVEAU FILTRAGE STRICT CORRIGÉ ---
+    // --- 3. FILTRAGE STRICT ---
     const tachesMeConcernant = allTasks.filter(task => {
       // Vérification du propriétaire du projet
       let taskProjectId = task.project ? (typeof task.project === 'object' ? (task.project._id || task.project.id) : task.project) : '';
