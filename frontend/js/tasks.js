@@ -321,6 +321,21 @@ function renderTasks(tasks) {
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
         const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
+        // --- AJOUT LOGIQUE DE LA DATE ET DU RETARD (RÈGLE DU PROFESSEUR) ---
+        const dateFormatee = task.dueDate 
+            ? new Date(task.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) 
+            : 'Pas de date';
+
+        const dateEcheance = task.dueDate ? new Date(task.dueDate) : null;
+        const aujourdhui = new Date();
+        aujourdhui.setHours(0,0,0,0); // On compare uniquement les jours, pas les heures
+        if (dateEcheance) dateEcheance.setHours(0,0,0,0);
+
+        // Si le statut n'est pas "terminé" et que la date d'échéance est passée (antérieure à aujourd'hui)
+        const estEnRetard = task.status !== 'terminé' && dateEcheance && dateEcheance < aujourdhui;
+        const classeCouleurDate = estEnRetard ? 'text-danger fw-bold' : 'text-muted';
+        // ------------------------------------------------------------------
+
         let assignedEmail = null;
         let assigneeId = null;
 
@@ -380,8 +395,12 @@ function renderTasks(tasks) {
         `;
 
         if (isProjectOwner) {
+            // C'EST ICI : On extrait la date au format strict 'YYYY-MM-DD' pris en charge par l'élément <input type="date">
+            const taskDueDateStr = task.dueDate ? task.dueDate.substring(0, 10) : '';
+
+            // ET ICI : On transmet 'taskDueDateStr' comme 6e paramètre dans l'événement onclick de openEdit
             actionButtons += `
-                <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')" title="Modifier">
+                <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}', '${taskDueDateStr}')" title="Modifier">
                     <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger btn-sm shadow-sm" onclick="deleteTask('${task._id}')" title="Supprimer">
@@ -400,7 +419,14 @@ function renderTasks(tasks) {
                             <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
                         </div>
                         ${descriptionText}
-                        <span class="badge ${statusClass} text-white mb-3 align-self-start">${task.status}</span>
+                        
+                        <div class="d-flex gap-2 align-items-center mb-3">
+                            <span class="badge ${statusClass} text-white">${task.status}</span>
+                            
+                            <span class="small ms-auto ${classeCouleurDate}" title="${estEnRetard ? 'Cette tâche est en retard !' : 'Date d\'échéance'}">
+                                <i class="bi bi-calendar3 me-1"></i> ${dateFormatee}
+                            </span>
+                        </div>
                         
                         <div class="mt-auto">
                             ${assignedNameHTML}
@@ -415,7 +441,6 @@ function renderTasks(tasks) {
 
     taskList.innerHTML = taskListHTML;
 }
-
 function renderPagination(page, totalPages) {
     const div = document.getElementById('pagination');
     if (!div) return; // Sécurité au cas où la balise HTML manque
@@ -436,66 +461,63 @@ function renderPagination(page, totalPages) {
 }
 
 async function addTask() {
-    const title = document.getElementById('taskTitle').value.trim();
+    const title = document.getElementById('taskTitle').value;
+    const description = document.getElementById('taskDescription').value;
     const priority = document.getElementById('taskPriority').value;
     const status = document.getElementById('taskStatus').value;
-    const description = document.getElementById('taskDescription').value;
     const assignedTo = document.getElementById('taskAssignedTo').value;
-    const errorDiv = document.getElementById('formError');
-    
+    const dueDate = document.getElementById('taskDueDate').value || null; // <-- Prend null si vide
+
+    // La date n'est plus requise ici
     if (!title || !priority || !status) {
-        errorDiv.textContent = 'Veuillez remplir tous les champs obligatoires.';
-        errorDiv.classList.remove('d-none');
+        const errorDiv = document.getElementById('formError');
+        if (errorDiv) {
+            errorDiv.textContent = "Veuillez remplir tous les champs obligatoires (*).";
+            errorDiv.classList.remove('d-none');
+        }
         return;
     }
-    errorDiv.classList.add('d-none');
 
     try {
-        const taskData = {
-            title: title,
-            description: description,
-            priority: priority,
-            status: status,
-            project: projetActuelId // Le plus important : lier au projet actuel !
-        };
-        
-        if (assignedTo) {
-            taskData.assignedTo = assignedTo;
-        }
+        await axios.post(BASE_URL, {
+            title,
+            description,
+            priority,
+            status,
+            assignedTo,
+            dueDate, 
+            project: projetActuelId
+        }, { headers: { Authorization: `Bearer ${token}` } });
 
-        // Envoi de la requête
-        await axios.post(BASE_URL, taskData, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-
-        // Fermer la modale
         const modalEl = document.getElementById('addTaskModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-
-        // Réinitialiser le formulaire
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.hide();
+        
+        // Reset complet
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
         document.getElementById('taskStatus').value = '';
         document.getElementById('taskAssignedTo').value = '';
+        document.getElementById('taskDueDate').value = '';
+        if (document.getElementById('formError')) document.getElementById('formError').classList.add('d-none');
 
-        // Recharger les tâches
-        loadTasks(1);
-
+        loadTasks(currentPage);
     } catch (err) {
-        console.error("Erreur lors de l'ajout de la tâche :", err);
-        errorDiv.textContent = "Erreur lors de l'ajout de la tâche. Vérifiez la console.";
-        errorDiv.classList.remove('d-none');
+        console.error(err);
     }
 }
 
-function openEdit(id, title, description, priority, status) {
+function openEdit(id, title, description, priority, status, dueDate) { 
     document.getElementById('editTaskId').value = id;
     document.getElementById('editTaskTitle').value = title;
     document.getElementById('editTaskDescription').value = description;
     document.getElementById('editTaskPriority').value = priority;
     document.getElementById('editTaskStatus').value = status;
+    
+    // 2. On pré-remplit le champ date (si pas de date, ça mettra une chaîne vide)
+    document.getElementById('editTaskDueDate').value = dueDate || ''; 
+    
     document.getElementById('editFormError').classList.add('d-none');
     new bootstrap.Modal(document.getElementById('editTaskModal')).show();
 }
@@ -506,6 +528,10 @@ async function saveEdit() {
     const description = document.getElementById('editTaskDescription').value;
     const priority = document.getElementById('editTaskPriority').value;
     const status = document.getElementById('editTaskStatus').value;
+    
+    // 3. On récupère la valeur du nouveau champ date (ou null si vide)
+    const dueDate = document.getElementById('editTaskDueDate').value || null; 
+    
     const errorDiv = document.getElementById('editFormError');
 
     if (!title) {
@@ -517,7 +543,8 @@ async function saveEdit() {
 
     try {
         await axios.put(`${BASE_URL}/${id}`, {
-            title, description, priority, status
+            // 4. On ajoute la dueDate dans le corps de la requête envoyée au Backend
+            title, description, priority, status, dueDate 
         }, { headers: { Authorization: `Bearer ${token}` } });
 
         bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();
