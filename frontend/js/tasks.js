@@ -210,7 +210,7 @@ window.changerPageDroite = function(newPage) {
 
 function ouvrirVueTaches(projectId, projectTitle) {
     projetActuelId = projectId; 
-    titreProjetActuel.innerHTML = `<small>Tâches du projet</small> : <strong style="color: #ffc402e0; ">${projectTitle}</strong>`;
+    titreProjetActuel.innerHTML = `<small>Projet</small> : <strong style="color: #ffc402e0; ">${projectTitle}</strong>`;
     
     vueProjets.classList.add('d-none');
     vueTaches.classList.remove('d-none');
