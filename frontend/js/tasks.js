@@ -157,28 +157,23 @@ async function chargerProjetsPourTaches() {
 }
 
 // Helper to keep code clean and dry
+// Helper to generate the large, minimalist yellow folder cards
 function générerHTMLDossier(project, currentUserId) {
-    let ownerId = project.owner ? (typeof project.owner === 'object' ? (project.owner._id || project.owner.id) : project.owner) : '';
-    ownerId = String(ownerId).trim();
-    const ownerName = project.owner && typeof project.owner === 'object' ? (project.owner.name || project.owner.nom || 'Quelqu\'un') : 'Inconnu';
-    const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
+    // Escape single quotes for clean JavaScript execution string handling
+    const safeTitle = project.title.replace(/'/g, "\\'");
+    const projectTitle = project.title || 'Sans titre';
 
     return `
-        <div class="modern-folder-item shadow-sm" onclick="ouvrirVueTaches('${project._id}', '${project.title.replace(/'/g, "\\'")}')">
-            <div>
-                <div class="d-flex align-items-center mb-1">
-                    <i class="bi bi-folder-fill text-warning me-2 fs-5"></i>
-                    <h5 class="text-dark fw-bold mb-0 text-truncate" style="font-size: 0.9rem;" title="${project.title}">
-                        ${project.title}
-                    </h5>
-                </div>
-                ${ownerId !== currentUserId ? `<p class="mb-1 text-muted text-truncate" style="font-size: 0.75rem;"><i class="bi bi-person"></i> ${ownerName}</p>` : ''}
-                <p class="text-muted small mb-0 text-truncate" style="font-size: 0.75rem; max-width: 100%;">${project.description || 'Pas de description'}</p>
+        <div class="modern-folder-item shadow-sm" onclick="ouvrirVueTaches('${project._id}', '${safeTitle}')">
+            <div class="folder-icon-large">
+                <i class="bi bi-folder-fill"></i>
             </div>
-            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-light">
-                <span class="text-secondary" style="font-size: 0.7rem;"><i class="bi bi-calendar-event"></i> ${dateAffichee}</span>
-                <span class="badge rounded-pill bg-light text-primary border border-primary-subtle fw-medium px-2 py-1" style="font-size: 0.65rem;">Ouvrir <i class="bi bi-chevron-right ms-0.5"></i></span>
-            </div>
+            <h4 class="folder-title-bold" title="${projectTitle}">
+                ${projectTitle}
+            </h4>
+            <p class="folder-click-hint">
+                Cliquez pour gérer les tâches
+            </p>
         </div>
     `;
 }

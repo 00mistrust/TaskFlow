@@ -51,43 +51,66 @@
       padding: 8px 4px;
     }
 
-    /* Modern Minimalist Folder Style */
-    .modern-folder-item {
-      position: relative;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 0 10px 10px 10px;
-      padding: 12px 14px;
-      margin-top: 10px; /* Space for the subtle tab folder look */
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      height: 115px; /* Compact structural height */
-      transition: all 0.2s ease-in-out;
-      cursor: pointer;
-    }
+    /* Layout container forcing clean rows of exactly 2 folders next to each other */
+#grilleProjets, #mesTachesAssigneesList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Enforces exactly 2 next to each other */
+  gap: 20px;
+  padding: 12px 4px;
+}
 
-    /* Structural Folder Tab */
-    .modern-folder-item::before {
-      content: "";
-      position: absolute;
-      top: -10px;
-      left: -1px;
-      height: 10px;
-      width: 65px;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-bottom: none;
-      border-radius: 6px 8px 0 0;
-    }
+/* Old Version Minimalist Yellow Folder Style Card */
+.modern-folder-item {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 16px;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  min-height: 190px;
+  text-decoration: none !important;
+}
 
-    /* Hover States - Soft Depth */
-    .modern-folder-item:hover {
-      transform: translateY(-2px);
-      border-color: #3c3489;
-      box-shadow: 0 4px 12px rgba(60, 52, 137, 0.08) !important;
-    }
+/* Beautiful Golden Yellow Hover Accent Rule */
+.modern-folder-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px rgba(37, 37, 36, 0.379) !important;
+}
 
+/* Remove the old tab pseudo element look entirely */
+.modern-folder-item::before {
+  display: none !important;
+}
+
+/* Custom Yellow Folder Icon Sizing */
+.folder-icon-large {
+  color: #ffc400 !important; /* Yellow theme color */
+  font-size: 3.8rem;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.folder-title-bold {
+  color: #3e3941;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 4px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-click-hint {
+  color: #9ca3af;
+  font-size: 0.8rem;
+  margin-bottom: 0;
+}
     /* Adjusting grid row utility behaviors */
     #vueProjets .row > .col-md-6 {
       padding-bottom: 20px;
@@ -133,6 +156,61 @@
     .text-info { color: #0b5567 !important; }
     .border-info-subtle { border-color: #cffafe !important; }
     .border-info { border-color: #cadbdf !important; }
+    /* Container layout for side-by-side folder item rows */
+.tasks-project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+    padding: 10px 2px;
+}
+
+/* Minimalist Yellow Folder Element Styles */
+.classic-folder-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none !important;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    min-height: 180px;
+}
+
+.classic-folder-card:hover {
+    transform: translateY(-4px);
+    border-color: #f59e0b; /* Golden Yellow Hover Highlight boundary line */
+    box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.05), 0 4px 6px -4px rgba(245, 158, 11, 0.05);
+}
+
+/* Yellow Theme Styling for Folder Icons */
+.folder-icon-wrapper {
+    color: #f59e0b; /* Bright Yellow palette code color matching image_1c169f */
+    font-size: 3.5rem;
+    line-height: 1;
+    margin-bottom: 12px;
+}
+
+.folder-project-title {
+    color: #1f2937;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.folder-project-desc {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
   </style>
 </head>
 <body class="bg-light">
