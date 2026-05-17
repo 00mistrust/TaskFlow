@@ -92,6 +92,47 @@
     #vueProjets .row > .col-md-6 {
       padding-bottom: 20px;
     }
+    /* Clean, modern vertical separator */
+    .divider-vertical {
+      position: relative;
+    }
+    
+    @media (min-width: 768px) {
+      .divider-vertical::after {
+        content: "";
+        position: absolute;
+        top: 5%;
+        right: -24px; /* Centers the line perfectly between the g-5 gap */
+        height: 90%;
+        width: 1px;
+        background: linear-gradient(to bottom, transparent, #e2e8f0 15%, #e2e8f0 85%, transparent);
+      }
+      
+      /* Give the right side column some explicit breathing space */
+      .ps-md-4 {
+        padding-left: 2.5rem !important;
+      }
+    }
+    /* Clean dashboard panels to segregate spaces explicitly */
+    .workspace-panel {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      height: 100%;
+      min-height: 450px;
+    }
+
+    /* Soft Bootstrap color pill utilities override */
+    .bg-primary-subtle { background-color: #eef2ff !important; }
+    .text-primary { color: #3c3489 !important; }
+    .border-primary-subtle { border-color: #e0e7ff !important; }
+    .border-primary { border-color: #aba8b9 !important; }
+
+    .bg-info-subtle { background-color: #ecfeff !important; }
+    .text-info { color: #0b5567 !important; }
+    .border-info-subtle { border-color: #cffafe !important; }
+    .border-info { border-color: #cadbdf !important; }
   </style>
 </head>
 <body class="bg-light">
@@ -146,41 +187,51 @@
   <div class="container mt-5 mb-5">
 
     <div id="vueProjets">
-      <div class="row">
+      <div class="row g-4"> 
         
-        <div class="col-md-6 border-end">
-          <div class="d-flex align-items-center mb-4">
-            <div class="p-3 bg-white rounded-3 shadow-sm d-inline-block me-3">
-              <i class="bi bi-grid-1x2-fill fs-3" style="color: #3c3489;"></i>
+        <div class="col-md-6">
+          <div class="workspace-panel border-start border-4 border-primary">
+            <div class="d-flex align-items-center mb-4">
+              <div class="p-3 bg-light rounded-3 shadow-sm d-inline-block me-3">
+                <i class="bi bi-grid-1x2-fill fs-3" style="color: #3c3489;"></i>
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-2">
+                  <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Mes projets</h2>
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">Personnel</span>
+                </div>
+                <p class="text-muted mb-0 small">Mes projets,mon controle sur les taches</p>
+              </div>
             </div>
-            <div>
-              <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Sélectionnez un Projet</h2>
-              <p class="text-muted mb-0 small">Choisissez un espace de travail pour gérer ses tâches.</p>
-            </div>
-          </div>
-          
-          <div class="row g-3" id="grilleProjets">
-            <div class="text-center text-muted mt-5">
-              <div class="spinner-border text-primary" role="status"></div>
-              <p class="mt-2">Chargement des projets...</p>
+            
+            <div class="row g-3" id="grilleProjets">
+              <div class="text-center text-muted mt-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2">Chargement des projets...</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="col-md-6 ps-md-4">
-          <div class="d-flex align-items-center mb-4">
-            <div class="p-3 bg-white rounded-3 shadow-sm d-inline-block me-3">
-              <i class="bi bi-person-check-fill fs-3 text-info"></i>
+        <div class="col-md-6">
+          <div class="workspace-panel border-start border-4 border-info">
+            <div class="d-flex align-items-center mb-4">
+              <div class="p-3 bg-light rounded-3 shadow-sm d-inline-block me-3">
+                <i class="bi bi-person-check-fill fs-3 text-info"></i>
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-2">
+                  <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Projets Assignés</h2>
+                  <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small">Partagé</span>
+                </div>
+                <p class="text-muted mb-0 small">Toutes les tâches qui vous sont confiées.</p>
+              </div>
             </div>
-            <div>
-              <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Mes Tâches Assignées</h2>
-              <p class="text-muted mb-0 small">Toutes les tâches qui vous sont confiées.</p>
-            </div>
-          </div>
 
-          <div class="row g-3" id="mesTachesAssigneesList">
-            <div class="text-center text-muted mt-5">
-              <p class="small">Sélectionnez un projet à gauche ou consultez vos tâches en cours.</p>
+            <div class="row g-3" id="mesTachesAssigneesList">
+              <div class="text-center text-muted mt-5">
+                <p class="small">Sélectionnez un projet à gauche ou consultez vos tâches en cours.</p>
+              </div>
             </div>
           </div>
         </div>
