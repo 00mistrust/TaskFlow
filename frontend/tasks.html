@@ -447,19 +447,25 @@
               </select>
             </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Assigner à</label>
-            <select class="form-select bg-light" id="taskAssignedTo">
-              <option value="">-- Non assigné --</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Date limite <span class="text-danger"></span></label>
-            <div class="input-group">
-              <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
-              <input type="date" class="form-control bg-light" id="taskDueDate">
-            </div>
-          </div>          
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Assigner à</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                  <select class="form-select bg-light" id="taskAssignedTo">
+                    <option value="">-- Non assigné --</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label class="form-label fw-semibold">Date limite</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                  <input type="date" class="form-control bg-light" id="taskDueDate">
+                </div>
+              </div>
+            </div>      
           <div id="formError" class="alert alert-danger d-none"></div>
         </div>
         <div class="modal-footer border-top-0 px-4 pb-4">
