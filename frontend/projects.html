@@ -7,8 +7,49 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <title>TaskFlow - Mes Projets</title>
+    <style>
+        /* Modern Minimalist Folder Grid Layout Setup */
+        .project-folder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+            padding: 4px 2px;
+        }
 
-    
+        .modern-folder-item {
+            position: relative;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0 10px 10px 10px;
+            padding: 12px 14px;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 165px; /* Allocated room for action buttons */
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Structural Folder Header Tab */
+        .modern-folder-item::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -1px;
+            height: 10px;
+            width: 65px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+            border-radius: 6px 8px 0 0;
+        }
+
+        .modern-folder-item:hover {
+            transform: translateY(-2px);
+            border-color: #3c3489;
+            box-shadow: 0 4px 12px rgba(60, 52, 137, 0.08) !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -69,51 +110,114 @@
   </div>
 </nav>
 
-<div class="container mt-4">
-        <h1 class="mb-4"><strong>Gestion des Projets</strong></h1>
-    <div class="card shadow-sm p-3 mb-4">
-    <h2 class="h6 text-secondary mb-3"><i class="bi bi-plus-square-dotted me-2"></i>Nouveau projet</h2>
-    <form id="projectForm">
-        <div class="row g-2 align-items-center">
-            <div class="col-md-3">
-                <input type="text" id="title" class="form-control form-control-sm" placeholder="Titre du projet" required>
-            </div>
-            
-            <div class="col-md-2">
-                <input type="date" id="deadline" class="form-control form-control-sm" title="Date limite">
-            </div>
-            
-            <div class="col-md-5">
-                <textarea id="description" class="form-control form-control-sm" rows="1" placeholder="Courte description"></textarea>
-            </div>
-            
-            <div class="col-md-2 d-grid">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-circle"></i> Créer
-                </button>
-            </div>
-        </div>
-    </form>
-</div>
-        <div class="row">
-            <div class="col-md-6">
-                <h3 class="text-primary border-bottom pb-2 mb-3">
-                    <i class="bi bi-folder-check"></i> Mes Projets
-                </h3>
-                <div id="mesProjetsList" class="d-flex flex-column gap-3"></div>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-info border-bottom pb-2 mb-3">
-                    <i class="bi bi-folder-symlink"></i> Projets Assignés
-                </h3>
-                <div id="projetsPartagesList" class="d-flex flex-column gap-3"></div>
+<div class="container-fluid px-md-5 mt-5 mb-5">
+    <div class="row mb-4 px-md-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 bg-white rounded-3 shadow-sm d-inline-block me-3">
+                    <i class="bi bi-kanban fs-3 text-primary" style="color: #3c3489 !important;"></i>
+                </div>
+                <div>
+                    <h1 class="mb-0 fw-bold h3" style="color: #1f2937;">Gestion des Projets</h1>
+                    <p class="text-muted mb-0 small">Créez des espaces de travail et suivez vos collaborations.</p>
+                </div>
             </div>
         </div>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/projects.js"></script>
-    <script src="js/navbar.js"></script>
+    <div class="row mb-5 px-md-2">
+        <div class="col-12">
+            <div class="card shadow-sm p-4 border-0" style="border-radius: 16px; background-color: #ffffff;">
+                <h2 class="h6 text-muted fw-bold mb-3"><i class="bi bi-plus-square-dotted me-2"></i>Nouveau projet</h2>
+                <form id="projectForm">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small fw-semibold mb-1">NOM DU PROJET</label>
+                            <input type="text" id="title" class="form-control bg-light border-0 py-2 small" style="border-radius: 8px;" placeholder="ex:projet js" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small fw-semibold mb-1">DATE LIMITE</label>
+                            <input type="date" id="deadline" class="form-control bg-light border-0 py-2 small" style="border-radius: 8px;" title="Date limite">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label text-muted small fw-semibold mb-1">DESCRIPTION</label>
+                            <textarea id="description" class="form-control bg-light border-0 py-2 small" rows="1" style="border-radius: 8px; resize: none;" placeholder="description..."></textarea>
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn text-white py-2 shadow-sm fw-semibold" style="background-color: #3c3489; border-radius: 8px; font-size: 0.9rem;">
+                                <i class="bi bi-plus-circle me-1"></i>Créer
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-5">
+        <div class="col-md-6">
+            <div class="p-4 bg-white shadow-sm d-flex flex-column" style="border-radius: 16px; border: 1px solid #e5e7eb; min-height: 480px;">
+                <h3 class="text-primary pb-3 mb-4 h6 fw-bold border-bottom d-flex align-items-center" style="letter-spacing: 0.5px; color: #3c3489 !important;">
+                    <i class="bi bi-folder-check me-2 fs-5"></i>MES PROJETS DÉDIÉS
+                </h3>
+                
+                <div id="mesProjetsList" class="project-folder-grid flex-grow-1"></div>
+                
+                <div id="mesProjetsPagination" class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top" style="border-color: #f3f4f6 !important;"></div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="p-4 bg-white shadow-sm d-flex flex-column" style="border-radius: 16px; border: 1px solid #e5e7eb; min-height: 480px;">
+                <h3 class="text-info pb-3 mb-4 h6 fw-bold border-bottom d-flex align-items-center" style="color: #0ea5e9 !important; letter-spacing: 0.5px;">
+                    <i class="bi bi-folder-symlink me-2 fs-5"></i>PROJETS PARTAGÉS AVEC MOI
+                </h3>
+                
+                <div id="projetsPartagesList" class="project-folder-grid flex-grow-1"></div>
+                
+                <div id="projetsPartagesPagination" class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top" style="border-color: #f3f4f6 !important;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-labelledby="editProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="editProjectModalLabel" style="color: #1f2937;">Modifier le projet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editProjectForm">
+                <div class="modal-body py-3">
+                    <input type="hidden" id="editProjectId">
+
+                    <div class="mb-3">
+                        <label for="editTitle" class="form-label text-muted small fw-semibold mb-1">TITRE DU PROJET</label>
+                        <input type="text" id="editTitle" class="form-control bg-light border-0 py-2 small" style="border-radius: 8px;" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDeadline" class="form-label text-muted small fw-semibold mb-1">DATE LIMITE</label>
+                        <input type="date" id="editDeadline" class="form-control bg-light border-0 py-2 small" style="border-radius: 8px;">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDescription" class="form-label text-muted small fw-semibold mb-1">DESCRIPTION</label>
+                        <textarea id="editDescription" class="form-control bg-light border-0 py-2 small" rows="3" style="border-radius: 8px; resize: none;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal" style="border-radius: 6px;">Annuler</button>
+                    <button type="submit" class="btn text-white btn-sm px-3 fw-semibold" style="background-color: #3c3489; border-radius: 6px;">
+                        Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/projects.js"></script>
+<script src="js/navbar.js"></script>
 </body>
 </html>

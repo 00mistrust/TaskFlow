@@ -11,6 +11,9 @@ router.get('/', authMiddleware, projectController.getAllProjects);
 // recuper projet specifique
 router.get('/:id', authMiddleware, projectController.getProjectById);
 
+//updsate project
+router.put('/:id', authMiddleware, projectController.updateProject);
+
 // invite memberby email
 router.post('/:id/invite', authMiddleware, projectController.inviteMember);
 

@@ -2,6 +2,9 @@
 const BASE_URL = 'http://localhost:5000/api/tasks';
 const token = localStorage.getItem('token');
 let currentPage = 1;
+let pageProjetsGauche = 1;
+let pageProjetsDroite = 1;
+const LIMIT_PROJETS = 6;
 
 if (!token) window.location.href = 'login.html';
 
@@ -69,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
 async function chargerProjetsPourTaches() {
     if (!grilleProjets) return;
 
-    // 1. Extraction propre de l'ID utilisateur connecté depuis le Token
     let currentUserId = null;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -86,77 +88,129 @@ async function chargerProjetsPourTaches() {
 
         if (response.ok) {
             const result = await response.json();
-            const projects = result.data || result || [];
+            const allProjects = result.data || result || [];
 
-            // Sélection des deux conteneurs (Gauche et Droite)
-            const gaucheContainer = document.getElementById('grilleProjets'); // Colonne de gauche
-            const droiteContainer = document.getElementById('mesTachesAssigneesList'); // Colonne de droite
+            const gaucheContainer = document.getElementById('grilleProjets'); 
+            const droiteContainer = document.getElementById('mesTachesAssigneesList'); 
 
-            // On vide les conteneurs avant de les remplir
             gaucheContainer.innerHTML = '';
             droiteContainer.innerHTML = '';
 
-            let hasOwned = false;
-            let hasAssigned = false;
+            // Split arrays to paginate them individually
+            const ownedProjects = [];
+            const sharedProjects = [];
 
-            projects.forEach(project => {
-                // Détermination de l'ID du propriétaire
-                let ownerId = '';
-                if (project.owner) {
-                    ownerId = typeof project.owner === 'object' ? (project.owner._id || project.owner.id) : project.owner;
-                }
+            allProjects.forEach(project => {
+                let ownerId = project.owner ? (typeof project.owner === 'object' ? (project.owner._id || project.owner.id) : project.owner) : '';
                 ownerId = String(ownerId).trim();
-                
-                const ownerName = project.owner && typeof project.owner === 'object' 
-                    ? (project.owner.name || project.owner.nom || 'Quelqu\'un') 
-                    : 'Inconnu';
 
-                // Formatage de la date limite
-                const dateAffichee = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Non défini';
-
-                // Structure HTML d'une carte projet simplifiée pour l'onglet Tâches
-                const cardHTML = `
-                    <div class="card shadow-sm border-0 mb-3 task-card">
-                        <div class="card-body p-3">
-                            <h5 class="card-title text-primary fw-bold h6 mb-1">${project.title}</h5>
-                            ${ownerId !== currentUserId ? `<p class="mb-1 small text-muted"><i class="bi bi-person"></i> Par : ${ownerName}</p>` : ''}
-                            <p class="card-text text-muted small mb-2 text-truncate">${project.description || 'Pas de description'}</p>
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <span class="text-secondary style="font-size: 0.75rem;"><i class="bi bi-calendar-event"></i> Délai : ${dateAffichee}</span>
-                                <button class="btn btn-sm btn-primary px-3" onclick="ouvrirVueTaches('${project._id}', '${project.title.replace(/'/g, "\\'")}')">
-                                    <i class="bi bi-folder2-open me-1"></i> Gérer
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // Condition magique : C'est le mien -> Gauche, Je suis invité -> Droite
                 if (currentUserId && ownerId && currentUserId === ownerId) {
-                    gaucheContainer.insertAdjacentHTML('beforeend', cardHTML);
-                    hasOwned = true;
+                    ownedProjects.push(project);
                 } else {
-                    droiteContainer.insertAdjacentHTML('beforeend', cardHTML);
-                    hasAssigned = true;
+                    sharedProjects.push(project);
                 }
             });
 
-            // Gérer les cas où une des colonnes est vide
-            if (!hasOwned) {
+            // --- PAGINATION FOR LEFT PANEL (OWNED) ---
+            const totalPagesGauche = Math.ceil(ownedProjects.length / LIMIT_PROJETS) || 1;
+            const startGauche = (pageProjetsGauche - 1) * LIMIT_PROJETS;
+            const paginatedOwned = ownedProjects.slice(startGauche, startGauche + LIMIT_PROJETS);
+
+            if (paginatedOwned.length === 0 && ownedProjects.length > 0) {
+                pageProjetsGauche = 1;
+                chargerProjetsPourTaches();
+                return;
+            }
+
+            if (paginatedOwned.length === 0) {
                 gaucheContainer.innerHTML = '<div class="text-muted small py-3 text-center">Vous n\'avez créé aucun projet.</div>';
+            } else {
+                paginatedOwned.forEach(project => {
+                    gaucheContainer.insertAdjacentHTML('beforeend', générerHTMLDossier(project, currentUserId));
+                });
             }
-            if (!hasAssigned) {
+            générerPaginationPanel('paginationProjetsGauche', pageProjetsGauche, totalPagesGauche, 'changerPageGauche');
+
+            // --- PAGINATION FOR RIGHT PANEL (SHARED) ---
+            const totalPagesDroite = Math.ceil(sharedProjects.length / LIMIT_PROJETS) || 1;
+            const startDroite = (pageProjetsDroite - 1) * LIMIT_PROJETS;
+            const paginatedShared = sharedProjects.slice(startDroite, startDroite + LIMIT_PROJETS);
+
+            if (paginatedShared.length === 0 && sharedProjects.length > 0) {
+                pageProjetsDroite = 1;
+                chargerProjetsPourTaches();
+                return;
+            }
+
+            if (paginatedShared.length === 0) {
                 droiteContainer.innerHTML = '<div class="text-muted small py-3 text-center">Aucun projet ne vous a été partagé.</div>';
+            } else {
+                paginatedShared.forEach(project => {
+                    droiteContainer.insertAdjacentHTML('beforeend', générerHTMLDossier(project, currentUserId));
+                });
             }
+            générerPaginationPanel('paginationProjetsDroite', pageProjetsDroite, totalPagesDroite, 'changerPageDroite');
         }
     } catch (error) {
         console.error("Erreur lors du chargement des projets sur la page des tâches :", error);
     }
 }
 
+// Helper to keep code clean and dry
+// Helper to generate the large, minimalist yellow folder cards
+function générerHTMLDossier(project, currentUserId) {
+    // Escape single quotes for clean JavaScript execution string handling
+    const safeTitle = project.title.replace(/'/g, "\\'");
+    const projectTitle = project.title || 'Sans titre';
+
+    return `
+        <div class="modern-folder-item shadow-sm" onclick="ouvrirVueTaches('${project._id}', '${safeTitle}')">
+            <div class="folder-icon-large">
+                <i class="bi bi-folder-fill"></i>
+            </div>
+            <h4 class="folder-title-bold" title="${projectTitle}">
+                ${projectTitle}
+            </h4>
+            <p class="folder-click-hint">
+                Cliquez pour gérer les tâches
+            </p>
+        </div>
+    `;
+}
+
+// Render utility for panels pagination
+function générerPaginationPanel(containerId, currentPage, totalPages, handlerName) {
+    const div = document.getElementById(containerId);
+    if (!div) return;
+    if (totalPages <= 1) {
+        div.innerHTML = '';
+        return;
+    }
+    div.innerHTML = `
+        <button class="btn btn-sm btn-outline-secondary pagination-btn" onclick="${handlerName}(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="text-muted small mx-2">Page ${currentPage} / ${totalPages}</span>
+        <button class="btn btn-sm btn-outline-secondary pagination-btn" onclick="${handlerName}(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    `;
+}
+
+// Global execution hooks for button actions
+window.changerPageGauche = function(newPage) {
+    pageProjetsGauche = newPage;
+    chargerProjetsPourTaches();
+}
+
+window.changerPageDroite = function(newPage) {
+    pageProjetsDroite = newPage;
+    chargerProjetsPourTaches();
+}
+
 function ouvrirVueTaches(projectId, projectTitle) {
     projetActuelId = projectId; 
-    titreProjetActuel.innerHTML = `Tâches : <strong>${projectTitle}</strong>`;
+    titreProjetActuel.innerHTML = `<small>Projet</small> : <strong style="color: #ffc402e0; ">${projectTitle}</strong>`;
     
     vueProjets.classList.add('d-none');
     vueTaches.classList.remove('d-none');
@@ -267,6 +321,21 @@ function renderTasks(tasks) {
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
         const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
+        // --- AJOUT LOGIQUE DE LA DATE ET DU RETARD (RÈGLE DU PROFESSEUR) ---
+        const dateFormatee = task.dueDate 
+            ? new Date(task.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) 
+            : 'Pas de date';
+
+        const dateEcheance = task.dueDate ? new Date(task.dueDate) : null;
+        const aujourdhui = new Date();
+        aujourdhui.setHours(0,0,0,0); // On compare uniquement les jours, pas les heures
+        if (dateEcheance) dateEcheance.setHours(0,0,0,0);
+
+        // Si le statut n'est pas "terminé" et que la date d'échéance est passée (antérieure à aujourd'hui)
+        const estEnRetard = task.status !== 'terminé' && dateEcheance && dateEcheance < aujourdhui;
+        const classeCouleurDate = estEnRetard ? 'text-danger fw-bold' : 'text-muted';
+        // ------------------------------------------------------------------
+
         let assignedEmail = null;
         let assigneeId = null;
 
@@ -326,8 +395,12 @@ function renderTasks(tasks) {
         `;
 
         if (isProjectOwner) {
+            // C'EST ICI : On extrait la date au format strict 'YYYY-MM-DD' pris en charge par l'élément <input type="date">
+            const taskDueDateStr = task.dueDate ? task.dueDate.substring(0, 10) : '';
+
+            // ET ICI : On transmet 'taskDueDateStr' comme 6e paramètre dans l'événement onclick de openEdit
             actionButtons += `
-                <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}')" title="Modifier">
+                <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}', '${taskDueDateStr}')" title="Modifier">
                     <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger btn-sm shadow-sm" onclick="deleteTask('${task._id}')" title="Supprimer">
@@ -346,7 +419,14 @@ function renderTasks(tasks) {
                             <span class="badge ${priorityClass} text-white ms-2">${task.priority}</span>
                         </div>
                         ${descriptionText}
-                        <span class="badge ${statusClass} text-white mb-3 align-self-start">${task.status}</span>
+                        
+                        <div class="d-flex gap-2 align-items-center mb-3">
+                            <span class="badge ${statusClass} text-white">${task.status}</span>
+                            
+                            <span class="small ms-auto ${classeCouleurDate}" title="${estEnRetard ? 'Cette tâche est en retard !' : 'Date d\'échéance'}">
+                                <i class="bi bi-calendar3 me-1"></i> ${dateFormatee}
+                            </span>
+                        </div>
                         
                         <div class="mt-auto">
                             ${assignedNameHTML}
@@ -361,7 +441,6 @@ function renderTasks(tasks) {
 
     taskList.innerHTML = taskListHTML;
 }
-
 function renderPagination(page, totalPages) {
     const div = document.getElementById('pagination');
     if (!div) return; // Sécurité au cas où la balise HTML manque
@@ -382,66 +461,63 @@ function renderPagination(page, totalPages) {
 }
 
 async function addTask() {
-    const title = document.getElementById('taskTitle').value.trim();
+    const title = document.getElementById('taskTitle').value;
+    const description = document.getElementById('taskDescription').value;
     const priority = document.getElementById('taskPriority').value;
     const status = document.getElementById('taskStatus').value;
-    const description = document.getElementById('taskDescription').value;
     const assignedTo = document.getElementById('taskAssignedTo').value;
-    const errorDiv = document.getElementById('formError');
-    
+    const dueDate = document.getElementById('taskDueDate').value || null; // <-- Prend null si vide
+
+    // La date n'est plus requise ici
     if (!title || !priority || !status) {
-        errorDiv.textContent = 'Veuillez remplir tous les champs obligatoires.';
-        errorDiv.classList.remove('d-none');
+        const errorDiv = document.getElementById('formError');
+        if (errorDiv) {
+            errorDiv.textContent = "Veuillez remplir tous les champs obligatoires (*).";
+            errorDiv.classList.remove('d-none');
+        }
         return;
     }
-    errorDiv.classList.add('d-none');
 
     try {
-        const taskData = {
-            title: title,
-            description: description,
-            priority: priority,
-            status: status,
-            project: projetActuelId // Le plus important : lier au projet actuel !
-        };
-        
-        if (assignedTo) {
-            taskData.assignedTo = assignedTo;
-        }
+        await axios.post(BASE_URL, {
+            title,
+            description,
+            priority,
+            status,
+            assignedTo,
+            dueDate, 
+            project: projetActuelId
+        }, { headers: { Authorization: `Bearer ${token}` } });
 
-        // Envoi de la requête
-        await axios.post(BASE_URL, taskData, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-
-        // Fermer la modale
         const modalEl = document.getElementById('addTaskModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-
-        // Réinitialiser le formulaire
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.hide();
+        
+        // Reset complet
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
         document.getElementById('taskStatus').value = '';
         document.getElementById('taskAssignedTo').value = '';
+        document.getElementById('taskDueDate').value = '';
+        if (document.getElementById('formError')) document.getElementById('formError').classList.add('d-none');
 
-        // Recharger les tâches
-        loadTasks(1);
-
+        loadTasks(currentPage);
     } catch (err) {
-        console.error("Erreur lors de l'ajout de la tâche :", err);
-        errorDiv.textContent = "Erreur lors de l'ajout de la tâche. Vérifiez la console.";
-        errorDiv.classList.remove('d-none');
+        console.error(err);
     }
 }
 
-function openEdit(id, title, description, priority, status) {
+function openEdit(id, title, description, priority, status, dueDate) { 
     document.getElementById('editTaskId').value = id;
     document.getElementById('editTaskTitle').value = title;
     document.getElementById('editTaskDescription').value = description;
     document.getElementById('editTaskPriority').value = priority;
     document.getElementById('editTaskStatus').value = status;
+    
+    // 2. On pré-remplit le champ date (si pas de date, ça mettra une chaîne vide)
+    document.getElementById('editTaskDueDate').value = dueDate || ''; 
+    
     document.getElementById('editFormError').classList.add('d-none');
     new bootstrap.Modal(document.getElementById('editTaskModal')).show();
 }
@@ -452,6 +528,10 @@ async function saveEdit() {
     const description = document.getElementById('editTaskDescription').value;
     const priority = document.getElementById('editTaskPriority').value;
     const status = document.getElementById('editTaskStatus').value;
+    
+    // 3. On récupère la valeur du nouveau champ date (ou null si vide)
+    const dueDate = document.getElementById('editTaskDueDate').value || null; 
+    
     const errorDiv = document.getElementById('editFormError');
 
     if (!title) {
@@ -463,7 +543,8 @@ async function saveEdit() {
 
     try {
         await axios.put(`${BASE_URL}/${id}`, {
-            title, description, priority, status
+            // 4. On ajoute la dueDate dans le corps de la requête envoyée au Backend
+            title, description, priority, status, dueDate 
         }, { headers: { Authorization: `Bearer ${token}` } });
 
         bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();

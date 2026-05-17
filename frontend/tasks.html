@@ -43,6 +43,174 @@
       padding: 60px 20px;
       color: #9ca3af;
     }
+   /* Clean grid container layout */
+    #grilleProjets, #mesTachesAssigneesList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      padding: 8px 4px;
+    }
+
+    /* Layout container forcing clean rows of exactly 2 folders next to each other */
+#grilleProjets, #mesTachesAssigneesList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Enforces exactly 2 next to each other */
+  gap: 20px;
+  padding: 12px 4px;
+}
+
+/* Old Version Minimalist Yellow Folder Style Card */
+.modern-folder-item {
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 16px;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  min-height: 190px;
+  text-decoration: none !important;
+}
+
+/* Beautiful Golden Yellow Hover Accent Rule */
+.modern-folder-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px rgba(37, 37, 36, 0.379) !important;
+}
+
+/* Remove the old tab pseudo element look entirely */
+.modern-folder-item::before {
+  display: none !important;
+}
+
+/* Custom Yellow Folder Icon Sizing */
+.folder-icon-large {
+  color: #ffc400 !important; /* Yellow theme color */
+  font-size: 3.8rem;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.folder-title-bold {
+  color: #3e3941;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 4px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-click-hint {
+  color: #9ca3af;
+  font-size: 0.8rem;
+  margin-bottom: 0;
+}
+    /* Adjusting grid row utility behaviors */
+    #vueProjets .row > .col-md-6 {
+      padding-bottom: 20px;
+    }
+    /* Clean, modern vertical separator */
+    .divider-vertical {
+      position: relative;
+    }
+    
+    @media (min-width: 768px) {
+      .divider-vertical::after {
+        content: "";
+        position: absolute;
+        top: 5%;
+        right: -24px; /* Centers the line perfectly between the g-5 gap */
+        height: 90%;
+        width: 1px;
+        background: linear-gradient(to bottom, transparent, #e2e8f0 15%, #e2e8f0 85%, transparent);
+      }
+      
+      /* Give the right side column some explicit breathing space */
+      .ps-md-4 {
+        padding-left: 2.5rem !important;
+      }
+    }
+    /* Clean dashboard panels to segregate spaces explicitly */
+    .workspace-panel {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      height: 100%;
+      min-height: 450px;
+    }
+
+    /* Soft Bootstrap color pill utilities override */
+    .bg-primary-subtle { background-color: #eef2ff !important; }
+    .text-primary { color: #3c3489 !important; }
+    .border-primary-subtle { border-color: #e0e7ff !important; }
+    .border-primary { border-color: #aba8b9 !important; }
+
+    .bg-info-subtle { background-color: #ecfeff !important; }
+    .text-info { color: #0b5567 !important; }
+    .border-info-subtle { border-color: #cffafe !important; }
+    .border-info { border-color: #cadbdf !important; }
+    /* Container layout for side-by-side folder item rows */
+.tasks-project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+    padding: 10px 2px;
+}
+
+/* Minimalist Yellow Folder Element Styles */
+.classic-folder-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none !important;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    min-height: 180px;
+}
+
+.classic-folder-card:hover {
+    transform: translateY(-4px);
+    border-color: #f59e0b; /* Golden Yellow Hover Highlight boundary line */
+    box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.05), 0 4px 6px -4px rgba(245, 158, 11, 0.05);
+}
+
+/* Yellow Theme Styling for Folder Icons */
+.folder-icon-wrapper {
+    color: #f59e0b; /* Bright Yellow palette code color matching image_1c169f */
+    font-size: 3.5rem;
+    line-height: 1;
+    margin-bottom: 12px;
+}
+
+.folder-project-title {
+    color: #1f2937;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.folder-project-desc {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
   </style>
 </head>
 <body class="bg-light">
@@ -93,46 +261,78 @@
       </ul>
     </div>
   </nav>
+  <div class="container-fluid px-md-5 mt-5 mb-5">
+    <div class="row mb-4 px-md-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 bg-white rounded-3 shadow-sm d-inline-block me-3">
+                    <i class="bi bi-kanban fs-3 text-primary" style="color: #ffffff !important;"></i>
+                </div>
+                <div>
+                    <h1 class="mb-0 fw-bold h3" style="color: #1f2937;">Gestion Tâches</h1>
+                    <p class="text-muted mb-0 small">Choisir un projet pour acceder à ses tâches.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
   <div class="container mt-5 mb-5">
 
     <div id="vueProjets">
-      <div class="row">
+      <div class="row g-4"> 
         
-        <div class="col-md-6 border-end">
-          <div class="d-flex align-items-center mb-4">
-            <div class="p-3 bg-white rounded-3 shadow-sm d-inline-block me-3">
-              <i class="bi bi-grid-1x2-fill fs-3" style="color: #3c3489;"></i>
-            </div>
+        <div class="col-md-6">
+          <div class="workspace-panel border-start border-4 border-primary d-flex flex-column justify-content-between">
             <div>
-              <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Sélectionnez un Projet</h2>
-              <p class="text-muted mb-0 small">Choisissez un espace de travail pour gérer ses tâches.</p>
+              <div class="d-flex align-items-center mb-4">
+                <div class="p-3 bg-light rounded-3 shadow-sm d-inline-block me-3">
+                  <i class="bi bi-grid-1x2-fill fs-3" style="color: #3c3489;"></i>
+                </div>
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Mes Projets</h2>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">Personnel</span>
+                  </div>
+                  <p class="text-muted mb-0 small">Ma gestion des tâches pour mes projets.</p>
+                </div>
+              </div>
+              
+              <div class="row g-3" id="grilleProjets">
+                <div class="text-center text-muted mt-5">
+                  <div class="spinner-border text-primary" role="status"></div>
+                  <p class="mt-2">Chargement des projets...</p>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div class="row g-3" id="grilleProjets">
-            <div class="text-center text-muted mt-5">
-              <div class="spinner-border text-primary" role="status"></div>
-              <p class="mt-2">Chargement des projets...</p>
-            </div>
+
+            <div id="paginationProjetsGauche" class="d-flex justify-content-center align-items-center gap-2 mt-4 pt-3 border-top border-light"></div>
           </div>
         </div>
 
-        <div class="col-md-6 ps-md-4">
-          <div class="d-flex align-items-center mb-4">
-            <div class="p-3 bg-white rounded-3 shadow-sm d-inline-block me-3">
-              <i class="bi bi-person-check-fill fs-3 text-info"></i>
-            </div>
+        <div class="col-md-6">
+          <div class="workspace-panel border-start border-4 border-info d-flex flex-column justify-content-between">
             <div>
-              <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Mes Tâches Assignées</h2>
-              <p class="text-muted mb-0 small">Toutes les tâches qui vous sont confiées.</p>
-            </div>
-          </div>
+              <div class="d-flex align-items-center mb-4">
+                <div class="p-3 bg-light rounded-3 shadow-sm d-inline-block me-3">
+                  <i class="bi bi-person-check-fill fs-3 text-info"></i>
+                </div>
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <h2 class="mb-0 fw-bold h4" style="color: #1f2937;">Projets Assignés</h2>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small">Partagé</span>
+                  </div>
+                  <p class="text-muted mb-0 small">Toutes les tâches qui vous sont confiées.</p>
+                </div>
+              </div>
 
-          <div class="row g-3" id="mesTachesAssigneesList">
-            <div class="text-center text-muted mt-5">
-              <p class="small">Sélectionnez un projet à gauche ou consultez vos tâches en cours.</p>
+              <div class="row g-3" id="mesTachesAssigneesList">
+                <div class="text-center text-muted mt-5">
+                  <p class="small">Sélectionnez un projet à gauche ou consultez vos tâches en cours.</p>
+                </div>
+              </div>
             </div>
+
+            <div id="paginationProjetsDroite" class="d-flex justify-content-center align-items-center gap-2 mt-4 pt-3 border-top border-light"></div>
           </div>
         </div>
 
@@ -247,12 +447,25 @@
               </select>
             </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Assigner à</label>
-            <select class="form-select bg-light" id="taskAssignedTo">
-              <option value="">-- Non assigné --</option>
-            </select>
-          </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Assigner à</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                  <select class="form-select bg-light" id="taskAssignedTo">
+                    <option value="">-- Non assigné --</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label class="form-label fw-semibold">Date limite</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                  <input type="date" class="form-control bg-light" id="taskDueDate">
+                </div>
+              </div>
+            </div>      
           <div id="formError" class="alert alert-danger d-none"></div>
         </div>
         <div class="modal-footer border-top-0 px-4 pb-4">
@@ -266,51 +479,58 @@
   </div>
 
   <div class="modal fade" id="editTaskModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content shadow" style="border-radius: 16px; border: none;">
-        <div class="modal-header" style="background-color: #4f46e5; border-radius: 16px 16px 0 0;">
-          <h5 class="modal-title text-white fw-bold"><i class="bi bi-pencil-square me-2"></i>Modifier la tâche</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow" style="border-radius: 16px; border: none;">
+      <div class="modal-header" style="background-color: #4f46e5; border-radius: 16px 16px 0 0;">
+        <h5 class="modal-title text-white fw-bold"><i class="bi bi-pencil-square me-2"></i>Modifier la tâche</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="editTaskId">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
+          <input type="text" class="form-control bg-light" id="editTaskTitle">
         </div>
-        <div class="modal-body p-4">
-          <input type="hidden" id="editTaskId">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
-            <input type="text" class="form-control bg-light" id="editTaskTitle">
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Description</label>
-            <textarea class="form-control bg-light" id="editTaskDescription" rows="3" placeholder="Description optionnelle..."></textarea>
-          </div>
-          <div class="row mb-3">
-            <div class="col-6">
-              <label class="form-label fw-semibold">Priorité <span class="text-danger">*</span></label>
-              <select class="form-select bg-light" id="editTaskPriority">
-                <option value="haute">🔴 Haute</option>
-                <option value="moyenne">🟡 Moyenne</option>
-                <option value="basse">🟢 Basse</option>
-              </select>
-            </div>
-            <div class="col-6">
-              <label class="form-label fw-semibold">Statut <span class="text-danger">*</span></label>
-              <select class="form-select bg-light" id="editTaskStatus">
-                <option value="à faire">À faire</option>
-                <option value="en cours">En cours</option>
-                <option value="terminé">Terminé</option>
-              </select>
-            </div>
-          </div>
-          <div id="editFormError" class="alert alert-danger d-none"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea class="form-control bg-light" id="editTaskDescription" rows="3" placeholder="Description optionnelle..."></textarea>
         </div>
-        <div class="modal-footer border-top-0 px-4 pb-4">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary px-4" style="background-color: #4f46e5; border: none;" onclick="saveEdit()">
-            <i class="bi bi-check2 me-1"></i>Sauvegarder
-          </button>
+        <div class="row mb-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold">Priorité <span class="text-danger">*</span></label>
+            <select class="form-select bg-light" id="editTaskPriority">
+              <option value="haute">🔴 Haute</option>
+              <option value="moyenne">🟡 Moyenne</option>
+              <option value="basse">🟢 Basse</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold">Statut <span class="text-danger">*</span></label>
+            <select class="form-select bg-light" id="editTaskStatus">
+              <option value="à faire">À faire</option>
+              <option value="en cours">En cours</option>
+              <option value="terminé">Terminé</option>
+            </select>
+          </div>
         </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Date limite</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+            <input type="date" class="form-control bg-light" id="editTaskDueDate">
+          </div>
+        </div>
+        <div id="editFormError" class="alert alert-danger d-none"></div>
+      </div>
+      <div class="modal-footer border-top-0 px-4 pb-4">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary px-4" style="background-color: #4f46e5; border: none;" onclick="saveEdit()">
+          <i class="bi bi-check2 me-1"></i>Sauvegarder
+        </button>
       </div>
     </div>
   </div>
+</div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
