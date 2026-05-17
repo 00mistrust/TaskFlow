@@ -18,19 +18,17 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 });
 
 // VARIABLES DE VUES ET PROJET ACTUEL
-// Add this line where your other DOM variables (vueProjets, vueTaches, etc.) are declared:
-// VARIABLES DE VUES ET PROJET ACTUEL
 const btnNouvelleTache = document.querySelector('[data-bs-target="#addTaskModal"]');
 const vueProjets = document.getElementById('vueProjets');
 const vueTaches = document.getElementById('vueTaches');
 const grilleProjets = document.getElementById('grilleProjets');
 const btnRetourProjets = document.getElementById('btnRetourProjets');
 
-
 // VARIABLES DU PROJET ACTUEL ET LECTURE DE L'URL
 const urlParams = new URLSearchParams(window.location.search);
-let projetActuelId = urlParams.get('id'); // Déclaré une seule fois ici !
+let projetActuelId = urlParams.get('id'); 
 let projetActuelData = null; 
+let brouillonEnAttente = null; // Mémoire tampon pour le bandeau vert
 
 console.log("ID du projet récupéré dans l'URL :", projetActuelId);
 
@@ -39,7 +37,6 @@ if (btnRetourProjets) {
     btnRetourProjets.addEventListener('click', () => {
         projetActuelId = null; 
         projetActuelData = null;
-        // On nettoie l'URL pour enlever le ?id= si on clique sur Retour
         window.history.pushState({}, document.title, window.location.pathname);
         vueTaches.classList.add('d-none');
         vueProjets.classList.remove('d-none');
@@ -50,11 +47,9 @@ if (btnRetourProjets) {
 // INITIALISATION AU CHARGEMENT DE LA PAGE
 document.addEventListener('DOMContentLoaded', () => {
     if (projetActuelId) {
-        // Cas 1 : On arrive depuis "Mes Projets" en cliquant sur "Tâches"
         vueProjets.classList.add('d-none');
         vueTaches.classList.remove('d-none');
         
-        // On charge les infos du projet, puis les tâches
         loadMembers().then(() => {
             if(projetActuelData && projetActuelData.title) {
                 titreProjetActuel.innerHTML = `Tâches : <strong>${projetActuelData.title}</strong>`;
@@ -62,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
             loadTasks(1);
         });
     } else {
-        // Cas 2 : On ouvre juste tasks.html via le menu de navigation (pas d'ID)
         vueTaches.classList.add('d-none');
         vueProjets.classList.remove('d-none');
         chargerProjetsPourTaches();
@@ -96,7 +90,6 @@ async function chargerProjetsPourTaches() {
             gaucheContainer.innerHTML = '';
             droiteContainer.innerHTML = '';
 
-            // Split arrays to paginate them individually
             const ownedProjects = [];
             const sharedProjects = [];
 
@@ -156,10 +149,7 @@ async function chargerProjetsPourTaches() {
     }
 }
 
-// Helper to keep code clean and dry
-// Helper to generate the large, minimalist yellow folder cards
 function générerHTMLDossier(project, currentUserId) {
-    // Escape single quotes for clean JavaScript execution string handling
     const safeTitle = project.title.replace(/'/g, "\\'");
     const projectTitle = project.title || 'Sans titre';
 
@@ -179,6 +169,7 @@ function générerHTMLDossier(project, currentUserId) {
 }
 
 // Render utility for panels pagination
+// Render utility for panels pagination
 function générerPaginationPanel(containerId, currentPage, totalPages, handlerName) {
     const div = document.getElementById(containerId);
     if (!div) return;
@@ -197,7 +188,6 @@ function générerPaginationPanel(containerId, currentPage, totalPages, handlerN
     `;
 }
 
-// Global execution hooks for button actions
 window.changerPageGauche = function(newPage) {
     pageProjetsGauche = newPage;
     chargerProjetsPourTaches();
@@ -215,37 +205,29 @@ function ouvrirVueTaches(projectId, projectTitle) {
     vueProjets.classList.add('d-none');
     vueTaches.classList.remove('d-none');
 
-    // First load members (and find project owner), then look up the tasks
     loadMembers().then(() => {
         loadTasks(1);
     });
 }
-
-
-
 
 // GESTION DES TÂCHES
 async function loadTasks(page = 1) {
     if (!projetActuelId) return; 
 
     try {
-        // 1. Récupération des filtres de l'interface
         let searchVal = document.getElementById('searchInput')?.value.toLowerCase() || '';
         let statusVal = document.getElementById('filterStatus')?.value || '';
         let priorityVal = document.getElementById('filterPriority')?.value || '';
         let memberVal = document.getElementById('filterMember')?.value || '';
 
-        // Nettoyage des filtres globaux
         if (statusVal.toLowerCase() === 'tous' || statusVal === 'all') statusVal = '';
         if (priorityVal.toLowerCase() === 'tous' || priorityVal === 'all') priorityVal = '';
         if (memberVal.toLowerCase() === 'tous' || memberVal === 'all') memberVal = '';
 
-        // 2. Construction de la requête pour le Backend
         const query = new URLSearchParams();
         query.append('page', page); 
-        query.append('limit', 6); // On demande 6 tâches par page au backend
+        query.append('limit', 6); 
 
-        // On envoie les filtres au backend pour qu'il fasse le tri directement dans la BDD
         if (searchVal) query.append('search', searchVal);
         if (statusVal) query.append('status', statusVal);
         if (priorityVal) query.append('priority', priorityVal);
@@ -254,16 +236,11 @@ async function loadTasks(page = 1) {
         const url = `${BASE_URL}/project/${projetActuelId}?${query}`;
         const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
 
-        // Récupération des données du backend
         let tasksToShow = res.data.data || (Array.isArray(res.data) ? res.data : []);
 
-        // 3. LA PAGINATION SYNCHRONISÉE
-        // On utilise STRICTEMENT les chiffres renvoyés par ton backend pour éviter les décalages
         const totalP = res.data.totalPages || 1;
         const currentP = page; 
 
-        // 4. AFFICHAGE DIRECT
-        // On ne fait plus de .filter() ou de .slice() en JS ici, on fait confiance au backend !
         renderTasks(tasksToShow);
         renderPagination(currentP, totalP);
         currentPage = currentP;
@@ -272,11 +249,11 @@ async function loadTasks(page = 1) {
         console.error("Erreur loadTasks :", err);
     }
 }
+
 function renderTasks(tasks) {
     const taskList = document.getElementById('taskList');
     if (!taskList) return;
     
-    // Vider la liste avant de la remplir
     taskList.innerHTML = '';
 
     if (!tasks || tasks.length === 0) {
@@ -284,7 +261,6 @@ function renderTasks(tasks) {
         return;
     }
 
-    // 1. EXTRAIRE L'UTILISATEUR CONNECTÉ DEPUIS LE TOKEN
     let currentUserId = null;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -293,7 +269,6 @@ function renderTasks(tasks) {
         console.error("Erreur de lecture du token dans renderTasks", e);
     }
 
-    // 2. EXTRAIRE LE PROPRIÉTAIRE DU PROJET
     let projectOwnerId = '';
     if (projetActuelData && projetActuelData.owner) {
         projectOwnerId = typeof projetActuelData.owner === 'object' ? 
@@ -303,38 +278,27 @@ function renderTasks(tasks) {
 
     const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
     
-    // 3. LE FILTRE LOGIQUE : Tout le monde voit tout 
     let tasksToDisplay = tasks;
-
-    // Si la liste est vide (géré globalement)
-    if (tasksToDisplay.length === 0) {
-        taskList.innerHTML = `<div class="col-12 text-muted small p-4 text-center bg-white rounded shadow-sm border">Aucune tâche dans ce projet pour l'instant.</div>`;
-        return;
-    }
 
     let taskListHTML = '';
 
-    // 4. AFFICHAGE DES CARTES EN GRILLE
     tasksToDisplay.forEach(task => {
         const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
         const descEscaped = (task.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
-        // --- AJOUT LOGIQUE DE LA DATE ET DU RETARD (RÈGLE DU PROFESSEUR) ---
         const dateFormatee = task.dueDate 
             ? new Date(task.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) 
             : 'Pas de date';
 
         const dateEcheance = task.dueDate ? new Date(task.dueDate) : null;
         const aujourdhui = new Date();
-        aujourdhui.setHours(0,0,0,0); // On compare uniquement les jours, pas les heures
+        aujourdhui.setHours(0,0,0,0); 
         if (dateEcheance) dateEcheance.setHours(0,0,0,0);
 
-        // Si le statut n'est pas "terminé" et que la date d'échéance est passée (antérieure à aujourd'hui)
         const estEnRetard = task.status !== 'terminé' && dateEcheance && dateEcheance < aujourdhui;
         const classeCouleurDate = estEnRetard ? 'text-danger fw-bold' : 'text-muted';
-        // ------------------------------------------------------------------
 
         let assignedEmail = null;
         let assigneeId = null;
@@ -395,10 +359,8 @@ function renderTasks(tasks) {
         `;
 
         if (isProjectOwner) {
-            // C'EST ICI : On extrait la date au format strict 'YYYY-MM-DD' pris en charge par l'élément <input type="date">
             const taskDueDateStr = task.dueDate ? task.dueDate.substring(0, 10) : '';
 
-            // ET ICI : On transmet 'taskDueDateStr' comme 6e paramètre dans l'événement onclick de openEdit
             actionButtons += `
                 <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" onclick="openEdit('${task._id}', '${task.title.replace(/'/g, "\\'")}', '${descEscaped}', '${task.priority}', '${task.status}', '${taskDueDateStr}')" title="Modifier">
                     <i class="bi bi-pencil"></i>
@@ -409,7 +371,6 @@ function renderTasks(tasks) {
             `;
         }
 
-        // Ajout à la grille (col-12 col-md-6 col-xl-4)
         taskListHTML += `
             <div class="col-12 col-md-6 col-xl-4">
                 <div class="card task-card shadow-sm h-100 border-0">
@@ -441,15 +402,14 @@ function renderTasks(tasks) {
 
     taskList.innerHTML = taskListHTML;
 }
+
 function renderPagination(page, totalPages) {
     const div = document.getElementById('pagination');
-    if (!div) return; // Sécurité au cas où la balise HTML manque
+    if (!div) return; 
 
-    // On s'assure d'afficher au moins "Page 1 / 1" même s'il n'y a aucune tâche
     const safeTotalPages = totalPages > 0 ? totalPages : 1;
     const safePage = page > 0 ? page : 1;
 
-    // On ne cache plus la div, on la remplit systématiquement
     div.innerHTML = `
         <button class="btn btn-sm btn-outline-secondary pagination-btn" onclick="loadTasks(${safePage - 1})" ${safePage <= 1 ? 'disabled' : ''}>
             <i class="bi bi-chevron-left"></i> Précédent
@@ -466,9 +426,8 @@ async function addTask() {
     const priority = document.getElementById('taskPriority').value;
     const status = document.getElementById('taskStatus').value;
     const assignedTo = document.getElementById('taskAssignedTo').value;
-    const dueDate = document.getElementById('taskDueDate').value || null; // <-- Prend null si vide
+    const dueDate = document.getElementById('taskDueDate').value || null;
 
-    // La date n'est plus requise ici
     if (!title || !priority || !status) {
         const errorDiv = document.getElementById('formError');
         if (errorDiv) {
@@ -488,12 +447,13 @@ async function addTask() {
             dueDate, 
             project: projetActuelId
         }, { headers: { Authorization: `Bearer ${token}` } });
+        
+        window.supprimerBrouillon();
 
         const modalEl = document.getElementById('addTaskModal');
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         modal.hide();
         
-        // Reset complet
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
@@ -514,10 +474,7 @@ function openEdit(id, title, description, priority, status, dueDate) {
     document.getElementById('editTaskDescription').value = description;
     document.getElementById('editTaskPriority').value = priority;
     document.getElementById('editTaskStatus').value = status;
-    
-    // 2. On pré-remplit le champ date (si pas de date, ça mettra une chaîne vide)
     document.getElementById('editTaskDueDate').value = dueDate || ''; 
-    
     document.getElementById('editFormError').classList.add('d-none');
     new bootstrap.Modal(document.getElementById('editTaskModal')).show();
 }
@@ -528,10 +485,7 @@ async function saveEdit() {
     const description = document.getElementById('editTaskDescription').value;
     const priority = document.getElementById('editTaskPriority').value;
     const status = document.getElementById('editTaskStatus').value;
-    
-    // 3. On récupère la valeur du nouveau champ date (ou null si vide)
     const dueDate = document.getElementById('editTaskDueDate').value || null; 
-    
     const errorDiv = document.getElementById('editFormError');
 
     if (!title) {
@@ -543,7 +497,6 @@ async function saveEdit() {
 
     try {
         await axios.put(`${BASE_URL}/${id}`, {
-            // 4. On ajoute la dueDate dans le corps de la requête envoyée au Backend
             title, description, priority, status, dueDate 
         }, { headers: { Authorization: `Bearer ${token}` } });
 
@@ -597,11 +550,8 @@ async function loadMembers() {
         });
         
         projetActuelData = res.data.data || res.data;
-        
-        // 1. Save globally to the window object so renderTasks() can see it
         window.membersCache = projetActuelData.members || [];
         
-        // 2. Extract identities for owner verification
         let currentUserId = null;
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
@@ -630,14 +580,12 @@ async function loadMembers() {
             }
         }
 
-        // 3. RE-POPULATE FILTER SELECTORS & FORM INPUTS USING THE WINDOW CACHE
         const filterSelect = document.getElementById('filterMember');
         if (filterSelect) filterSelect.innerHTML = '<option value="">Tous les membres</option>';
         
         const assignSelect = document.getElementById('taskAssignedTo');
         if (assignSelect) assignSelect.innerHTML = '<option value="">-- Non assigné --</option>';
 
-        // Loop through window.membersCache so the main filter works perfectly too!
         window.membersCache.forEach(member => {
             const option = document.createElement('option');
             option.value = member._id || member.id; 
@@ -651,21 +599,49 @@ async function loadMembers() {
     }
 }
 
+// MANAGEMENT DU MODAL ADDTASK AVEC RESET INTEGRAL ET DETECTEUR DE BROUILLON VISUEL
 const modalEl = document.getElementById('addTaskModal');
-if(modalEl) {
+if (modalEl) {
     modalEl.addEventListener('show.bs.modal', () => {
-        if(!projetActuelId) return;
-        const saved = localStorage.getItem('draft_' + projetActuelId);
-        if (saved) {
-            const draft = JSON.parse(saved);
-            if ((draft.title || draft.priority || draft.status) && confirm('💾 Brouillon détecté — Voulez-vous le restaurer ?')) {
-                document.getElementById('taskTitle').value = draft.title || '';
-                document.getElementById('taskPriority').value = draft.priority || '';
-                document.getElementById('taskStatus').value = draft.status || '';
+        // Formulaire vierge à chaque ouverture
+        document.getElementById('taskTitle').value = '';
+        document.getElementById('taskDescription').value = '';
+        document.getElementById('taskPriority').value = '';
+        document.getElementById('taskStatus').value = '';
+        document.getElementById('taskAssignedTo').value = '';
+        document.getElementById('taskDueDate').value = '';
+        
+        const alertDiv = document.getElementById('draftAlert');
+        if (alertDiv) alertDiv.classList.add('d-none');
+
+        if (!projetActuelId) return;
+        const dataSauvegardee = localStorage.getItem(`brouillon_projet_${projetActuelId}`);
+        
+        if (dataSauvegardee) {
+            const brouillon = JSON.parse(dataSauvegardee);
+            if (brouillon.title || brouillon.description) {
+                brouillonEnAttente = brouillon; 
+                if (alertDiv) alertDiv.classList.remove('d-none'); // Déclenchement du bandeau vert
             }
         }
     });
 }
+
+window.restaurerLeBrouillonVisuellement = function() {
+    if (!brouillonEnAttente) return;
+
+    document.getElementById('taskTitle').value = brouillonEnAttente.title || '';
+    document.getElementById('taskDescription').value = brouillonEnAttente.description || '';
+    document.getElementById('taskPriority').value = brouillonEnAttente.priority || '';
+    document.getElementById('taskStatus').value = brouillonEnAttente.status || '';
+    document.getElementById('taskAssignedTo').value = brouillonEnAttente.assignedTo || '';
+    document.getElementById('taskDueDate').value = brouillonEnAttente.dueDate || '';
+
+    const alertDiv = document.getElementById('draftAlert');
+    if (alertDiv) alertDiv.classList.add('d-none');
+    
+    brouillonEnAttente = null; 
+};
 
 async function pollNotifications() {
     try {
@@ -681,7 +657,7 @@ async function pollNotifications() {
         console.log('Notifications non disponibles');
     }
 }
-// FUNCTION POUR REASSIGNER UNE TÂCHE (APPELÉE PAR LE DROPDOWN ONCHANGE)
+
 async function assignTask(taskId) {
     const selectElement = document.getElementById(`assign-${taskId}`);
     if (!selectElement) return;
@@ -689,7 +665,6 @@ async function assignTask(taskId) {
     const newAssigneeId = selectElement.value;
 
     try {
-        // Envoi de la requête PATCH au backend avec la valeur sélectionnée
         const response = await axios.patch(
             `${BASE_URL}/${taskId}/assign`, 
             { assignedTo: newAssigneeId || null }, 
@@ -698,19 +673,42 @@ async function assignTask(taskId) {
 
         if (response.status === 200) {
             alert("Tâche réassignée avec succès !");
-            loadTasks(currentPage); // Recharge la liste des tâches pour mettre l'affichage à jour
+            loadTasks(currentPage); 
         }
     } catch (err) {
         console.error("Erreur lors de la réassignation :", err);
         alert(err.response?.data?.error || "Erreur lors de la réassignation de la tâche.");
-        loadTasks(currentPage); // Annule le changement visuel si le backend refuse
+        loadTasks(currentPage); 
     }
 }
+
+// LOGIQUE DES BROUILLONS SANS BLOCAGE NATIF CONFIRM()
+window.sauvegarderBrouillon = function() {
+    if (!projetActuelId) return;
+
+    const brouillon = {
+        title: document.getElementById('taskTitle').value,
+        description: document.getElementById('taskDescription').value,
+        priority: document.getElementById('taskPriority').value,
+        status: document.getElementById('taskStatus').value,
+        assignedTo: document.getElementById('taskAssignedTo').value,
+        dueDate: document.getElementById('taskDueDate').value
+    };
+
+    localStorage.setItem(`brouillon_projet_${projetActuelId}`, JSON.stringify(brouillon));
+};
+
+window.supprimerBrouillon = function() {
+    if (projetActuelId) {
+        localStorage.removeItem(`brouillon_projet_${projetActuelId}`);
+    }
+    const alertDiv = document.getElementById('draftAlert');
+    if (alertDiv) alertDiv.classList.add('d-none');
+    brouillonEnAttente = null;
+};
+
 // DÉMARRAGE DE LA PAGE
 pollNotifications();
 setInterval(pollNotifications, 30000);
-
-// REMOVED: chargerProjetsPourTaches(); (It is already handled inside document.addEventListener('DOMContentLoaded') up top!)
-// Rendre la fonction accessible globalement pour les attributs HTML 'onclick' / 'onchange'
 window.assignTask = assignTask;
 chargerProjetsPourTaches();
