@@ -8,50 +8,199 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    .activity-item {
-      border-left: 3px solid #3c3489;
-      padding: 12px 16px;
-      margin-bottom: 12px;
-      background: white;
-      border-radius: 0 12px 12px 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    .projects-grid {
+      display: grid;
+      /* Wider base width and larger gap to make it look less cramped (moyen/grand) */
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 30px; 
+      margin-top: 24px;
     }
-    .activity-icon {
+    
+    .project-pack-card {
+      background: #ffffff;
+      /* Removed all borders as requested */
+      border: none;
+      border-radius: 16px;
+      /* Balanced medium footprint with good internal spacing */
+      padding: 24px;
+      text-align: left;
+      /* Rich, deep multi-layered modern shadow instead of borders */
+      box-shadow: 0 12px 30px -5px rgba(15, 23, 42, 0.1), 
+                  0 6px 16px -2px rgba(15, 23, 42, 0.05);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .project-pack-card:hover {
+      transform: translateY(-4px);
+      /* Deeper shadow elevation on hover */
+      box-shadow: 0 24px 45px -10px rgba(15, 23, 42, 0.15), 
+                  0 10px 24px -4px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Target the button from your image/JS output based on the original class structure */
+    .btn-outline-secondary {
+      /* Removed borders entirely */
+      border: none !important;
+      /* Perfect pill shape */
+      border-radius: 100px !important;
+      /* Generous full-color background */
+      background: #3c3489 !important;
+      /* White text with better organization/padding */
+      color: #ffffff !important;
+      font-size: 0.8rem !important;
+      font-weight: 600 !important;
+      padding: 8px 18px !important;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-outline-secondary:hover {
+      background: #1a1a1a !important; /* Neutral highlight */
+      color: #ffffff !important;
+    }
+
+    /* Left panel elements alignment within the card */
+    .project-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .folder-icon {
+      font-size: 1.1rem;
+      color: #ffca28;
+      margin-bottom: 0 !important;
+      background: rgba(255, 202, 40, 0.12);
       width: 36px;
       height: 36px;
-      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      border-radius: 10px;
       flex-shrink: 0;
     }
-    .icon-task-created   { background: #e0f2fe; color: #0369a1; }
-    .icon-task-deleted   { background: #fee2e2; color: #dc2626; }
-    .icon-task-status    { background: #fef9c3; color: #ca8a04; }
-    .icon-member-added   { background: #dcfce7; color: #16a34a; }
-    .icon-member-removed { background: #fee2e2; color: #dc2626; }
-    .icon-project        { background: #ede9fe; color: #7c3aed; }
+
+    .project-name-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #0f172a;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Rich Timeline Spacing (What happens inside after click) */
+    .timeline-container {
+      position: relative;
+      margin-top: 40px;
+      padding-left: 35px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .timeline-container::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: linear-gradient(to bottom, #3c3489, #e2e8f0 90%);
+    }
+    
+    /* Borderless, Shadow-Based Activity Cards */
+    .activity-item {
+      position: relative;
+      background: #ffffff;
+      border: none;
+      padding: 18px 24px;
+      margin-bottom: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px -6px rgba(15, 23, 42, 0.04),
+                  0 4px 8px -2px rgba(15, 23, 42, 0.02);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    .activity-item:hover {
+      box-shadow: 0 12px 24px -5px rgba(15, 23, 42, 0.06),
+                  0 6px 12px -2px rgba(15, 23, 42, 0.03);
+    }
+    
+    /* Dynamic floating outer ring nodes */
+    .activity-item::before {
+      content: '';
+      position: absolute;
+      left: -33px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      background: #ffffff;
+      border: 3px solid #3c3489;
+      box-shadow: 0 0 0 4px rgba(60, 52, 137, 0.08);
+      border-radius: 50%;
+      z-index: 2;
+    }
+    
+    /* Typography Organization */
+    .activity-text {
+      color: #475569;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .activity-text strong { 
+      color: #3c3489; /* brand color accent */
+      font-weight: 600;
+    }
+    
+    .activity-time {
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 500;
+      white-space: nowrap;
+      margin-left: 24px;
+      background: #f1f5f9;
+      padding: 5px 12px;
+      border-radius: 100px;
+    }
+    
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
-      color: #9ca3af;
+      padding: 100px 20px;
+      color: #94a3b8;
     }
-    .timeline-date {
-      font-size: 0.75rem;
-      color: #6b7280;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin: 20px 0 10px;
-    }
-    .example-box {
-      background: #f5f3ff;
-      border-left: 4px solid #3c3489;
-      border-radius: 0 12px 12px 0;
-      padding: 16px 20px;
-      margin-bottom: 12px;
-    }
+    /* Custom styling for your specific span-based button */
+span.btn.btn-sm.btn-outline-primary {
+  background-color: #7d7bff !important; /* Full solid purple color */
+  color: #ffffff !important;            /* Pure white text */
+  border: none !important;             /* Completely removes the ugly borders */
+  border-radius: 100px !important;     /* Makes it a beautiful rounded pill shape */
+  padding: 8px 20px !important;        /* Generous spacing inside the button */
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Subtle neutral dark shade on hover */
+span.btn.btn-sm.btn-outline-primary:hover {
+  background-color: #ab75b9 !important; /* Elegant deeper purple shade */
+  color: #ffffff !important;
+}
   </style>
 </head>
 <body class="bg-light">
@@ -65,35 +214,17 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="dashboard.html">
-            <i class="bi bi-speedometer2 me-1"></i>Tableau de bord
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="projects.html">
-            <i class="bi bi-folder me-1"></i>Projets
-          </a>
-        </li>
-              <li class="nav-item">
-        <a class="nav-link" href="members.html">
-          <i class="bi bi-people me-1"></i>Membres
-        </a>
-        <li class="nav-item">
-          <a class="nav-link" href="tasks.html">
-            <i class="bi bi-check2-square me-1"></i>Tâches
-          </a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2 me-1"></i>Tableau de bord</a></li>
+        <li class="nav-item"><a class="nav-link" href="projects.html"><i class="bi bi-folder me-1"></i>Projets</a></li>
+        <li class="nav-item"><a class="nav-link" href="members.html"><i class="bi bi-people me-1"></i>Membres</a></li>
+        <li class="nav-item"><a class="nav-link" href="tasks.html"><i class="bi bi-check2-square me-1"></i>Tâches</a></li>
       </ul>
       <ul class="navbar-nav ms-auto align-items-center">
-        <!-- Icône Historique -->
         <li class="nav-item me-3">
           <a class="nav-link active" href="activities.html" title="Historique des activités">
             <i class="bi bi-clock-history fs-5"></i>
           </a>
         </li>
-        <!-- Icône Notifications -->
-
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="notifications.html">
             <i class="bi bi-bell-fill fs-5"></i>
@@ -117,144 +248,30 @@
 
   <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 style="color: #3c3489;"><strong>Historique des activités</strong></h2>
-      <a href="projects.html" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Retour aux projets
-      </a>
+      <div>
+        <h2 style="color: #3c3489;" id="pageTitle" class="fs-4 mb-1"><strong>Historique des activités</strong></h2>
+        <p class="text-muted small mb-0" id="pageSubtitle">Sélectionnez un pack projet pour explorer les actions récentes de votre équipe.</p>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="btnBack" style="display: none;" onclick="showPacksView()">
+        <i class="bi bi-arrow-left me-1"></i>Retour aux packs projets
+      </button>
     </div>
 
-    <div id="activityFeed">
-      <div class="empty-state">
-        <i class="bi bi-hourglass-split fs-1 mb-3 d-block"></i>
-        <p>Chargement des activités...</p>
-      </div>
+    <div id="packsSection">
+      <div class="projects-grid" id="projectsGrid">
+        </div>
     </div>
+
+    <div id="feedSection" style="display: none;">
+      <div class="timeline-container" id="timelineContainer"></div>
+    </div>
+
+    <div id="statusMessage" class="empty-state" style="display: none;"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script>
-    const token = localStorage.getItem('token');
-    if (!token) window.location.href = 'login.html';
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.name) document.getElementById('userName').textContent = user.name;
-
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = 'login.html';
-    });
-
-    const params = new URLSearchParams(window.location.search);
-    const PROJECT_ID = params.get('id');
-
-    function getIcon(actionType) {
-      const icons = {
-        'task_created':        { cls: 'icon-task-created',   icon: 'bi-plus-circle' },
-        'task_deleted':        { cls: 'icon-task-deleted',   icon: 'bi-trash' },
-        'task_status_changed': { cls: 'icon-task-status',    icon: 'bi-arrow-repeat' },
-        'member_added':        { cls: 'icon-member-added',   icon: 'bi-person-plus' },
-        'member_removed':      { cls: 'icon-member-removed', icon: 'bi-person-dash' },
-        'project_updated':     { cls: 'icon-project',        icon: 'bi-pencil-square' }
-      };
-      return icons[actionType] || { cls: 'icon-project', icon: 'bi-info-circle' };
-    }
-
-    function timeAgo(dateStr) {
-      const now = new Date();
-      const date = new Date(dateStr);
-      const diff = Math.floor((now - date) / 1000);
-      if (diff < 60) return 'il y a quelques secondes';
-      if (diff < 3600) return `il y a ${Math.floor(diff / 60)} minutes`;
-      if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} heures`;
-      return `il y a ${Math.floor(diff / 86400)} jours`;
-    }
-
-    function formatDate(dateStr) {
-      return new Date(dateStr).toLocaleDateString('fr-FR', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-      });
-    }
-
-    function showNoProject() {
-      document.getElementById('activityFeed').innerHTML = `
-        <div class="empty-state">
-          <i class="bi bi-clock-history fs-1 mb-3 d-block" style="color:#3c3489;"></i>
-          <div class="example-box text-start mb-4" style="max-width:500px;margin:0 auto;">
-           <p class="mb-1"><strong><center>Historique est vide</strong></p>  
-          </div>
-          <p class="text-muted small">Sélectionnez un projet pour voir son historique réel.</p>
-          <a href="projects.html" class="btn btn-primary mt-2" style="background-color:white; border-color:#3c3489;">
-            <i class="bi-folder me-1"></i><strong>voir mes projets</strong>
-        </div>`;
-    }
-
-    async function loadActivities() {
-      if (!PROJECT_ID) {
-        showNoProject();
-        return;
-      }
-
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/projects/${PROJECT_ID}/activities`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        const activities = res.data;
-        const feed = document.getElementById('activityFeed');
-
-        if (!activities || activities.length === 0) {
-          feed.innerHTML = `
-            <div class="empty-state">
-              <i class="bi bi-inbox fs-1 mb-3 d-block"></i>
-              <p>Aucune activité pour ce projet.</p>
-            </div>`;
-          return;
-        }
-
-        let currentDate = '';
-        let html = '';
-
-        activities.forEach(activity => {
-          const actDate = formatDate(activity.createdAt);
-          if (actDate !== currentDate) {
-            currentDate = actDate;
-            html += `<div class="timeline-date">${actDate}</div>`;
-          }
-
-          const { cls, icon } = getIcon(activity.actionType);
-          const userName = activity.user?.name || 'Utilisateur';
-          const ago = timeAgo(activity.createdAt);
-
-          html += `
-            <div class="activity-item d-flex align-items-start gap-3">
-              <div class="activity-icon ${cls}">
-                <i class="bi ${icon}"></i>
-              </div>
-              <div class="flex-grow-1">
-                <p class="mb-0" style="color: #1f2937;">
-                  <strong>${userName}</strong> ${activity.description} — 
-                  <span class="text-muted fst-italic">${ago}</span>
-                </p>
-              </div>
-            </div>`;
-        });
-
-        feed.innerHTML = html;
-      } catch (err) {
-        if (err.response?.status === 401) window.location.href = 'login.html';
-        document.getElementById('activityFeed').innerHTML = `
-          <div class="empty-state">
-            <i class="bi bi-exclamation-circle fs-1 mb-3 d-block text-danger"></i>
-            <p>Erreur lors du chargement des activités.</p>
-          </div>`;
-      }
-    }
-
-    loadActivities();
-  </script>
-  <script src="js/navbar.js"></script>
+  <script src="js/activities.js"></script>
 </body>
 </html>

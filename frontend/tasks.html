@@ -43,79 +43,67 @@
       padding: 60px 20px;
       color: #9ca3af;
     }
-   /* Clean grid container layout */
+    
     #grilleProjets, #mesTachesAssigneesList {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
-      padding: 8px 4px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      padding: 12px 4px;
     }
 
-    /* Layout container forcing clean rows of exactly 2 folders next to each other */
-#grilleProjets, #mesTachesAssigneesList {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Enforces exactly 2 next to each other */
-  gap: 20px;
-  padding: 12px 4px;
-}
+    .modern-folder-item {
+      background: #ffffff;
+      border: 1px solid #eef0f4;
+      border-radius: 16px;
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      cursor: pointer;
+      min-height: 190px;
+      text-decoration: none !important;
+    }
 
-/* Old Version Minimalist Yellow Folder Style Card */
-.modern-folder-item {
-  background: #ffffff;
-  border: 1px solid #eef0f4;
-  border-radius: 16px;
-  padding: 30px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  cursor: pointer;
-  min-height: 190px;
-  text-decoration: none !important;
-}
+    .modern-folder-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 20px rgba(37, 37, 36, 0.379) !important;
+    }
 
-/* Beautiful Golden Yellow Hover Accent Rule */
-.modern-folder-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 20px rgba(37, 37, 36, 0.379) !important;
-}
+    .modern-folder-item::before {
+      display: none !important;
+    }
 
-/* Remove the old tab pseudo element look entirely */
-.modern-folder-item::before {
-  display: none !important;
-}
+    .folder-icon-large {
+      color: #ffc400 !important;
+      font-size: 3.8rem;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
 
-/* Custom Yellow Folder Icon Sizing */
-.folder-icon-large {
-  color: #ffc400 !important; /* Yellow theme color */
-  font-size: 3.8rem;
-  line-height: 1;
-  margin-bottom: 12px;
-}
+    .folder-title-bold {
+      color: #3e3941;
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
-.folder-title-bold {
-  color: #3e3941;
-  font-weight: 700;
-  font-size: 1.25rem;
-  margin-bottom: 4px;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.folder-click-hint {
-  color: #9ca3af;
-  font-size: 0.8rem;
-  margin-bottom: 0;
-}
-    /* Adjusting grid row utility behaviors */
+    .folder-click-hint {
+      color: #9ca3af;
+      font-size: 0.8rem;
+      margin-bottom: 0;
+    }
+    
     #vueProjets .row > .col-md-6 {
       padding-bottom: 20px;
     }
-    /* Clean, modern vertical separator */
+    
     .divider-vertical {
       position: relative;
     }
@@ -125,18 +113,17 @@
         content: "";
         position: absolute;
         top: 5%;
-        right: -24px; /* Centers the line perfectly between the g-5 gap */
+        right: -24px;
         height: 90%;
         width: 1px;
         background: linear-gradient(to bottom, transparent, #e2e8f0 15%, #e2e8f0 85%, transparent);
       }
       
-      /* Give the right side column some explicit breathing space */
       .ps-md-4 {
         padding-left: 2.5rem !important;
       }
     }
-    /* Clean dashboard panels to segregate spaces explicitly */
+    
     .workspace-panel {
       background: #ffffff;
       border-radius: 12px;
@@ -146,7 +133,6 @@
       min-height: 450px;
     }
 
-    /* Soft Bootstrap color pill utilities override */
     .bg-primary-subtle { background-color: #eef2ff !important; }
     .text-primary { color: #3c3489 !important; }
     .border-primary-subtle { border-color: #e0e7ff !important; }
@@ -156,61 +142,59 @@
     .text-info { color: #0b5567 !important; }
     .border-info-subtle { border-color: #cffafe !important; }
     .border-info { border-color: #cadbdf !important; }
-    /* Container layout for side-by-side folder item rows */
-.tasks-project-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 20px;
-    padding: 10px 2px;
-}
+    
+    .tasks-project-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 20px;
+        padding: 10px 2px;
+    }
 
-/* Minimalist Yellow Folder Element Styles */
-.classic-folder-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 24px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    text-decoration: none !important;
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    cursor: pointer;
-    min-height: 180px;
-}
+    .classic-folder-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 24px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        text-decoration: none !important;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+        min-height: 180px;
+    }
 
-.classic-folder-card:hover {
-    transform: translateY(-4px);
-    border-color: #f59e0b; /* Golden Yellow Hover Highlight boundary line */
-    box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.05), 0 4px 6px -4px rgba(245, 158, 11, 0.05);
-}
+    .classic-folder-card:hover {
+        transform: translateY(-4px);
+        border-color: #f59e0b;
+        box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.05), 0 4px 6px -4px rgba(245, 158, 11, 0.05);
+    }
 
-/* Yellow Theme Styling for Folder Icons */
-.folder-icon-wrapper {
-    color: #f59e0b; /* Bright Yellow palette code color matching image_1c169f */
-    font-size: 3.5rem;
-    line-height: 1;
-    margin-bottom: 12px;
-}
+    .folder-icon-wrapper {
+        color: #f59e0b;
+        font-size: 3.5rem;
+        line-height: 1;
+        margin-bottom: 12px;
+    }
 
-.folder-project-title {
-    color: #1f2937;
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 4px;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+    .folder-project-title {
+        color: #1f2937;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 
-.folder-project-desc {
-    color: #6b7280;
-    font-size: 0.8rem;
-    margin-bottom: 0;
-}
+    .folder-project-desc {
+        color: #6b7280;
+        font-size: 0.8rem;
+        margin-bottom: 0;
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -261,20 +245,22 @@
       </ul>
     </div>
   </nav>
+
   <div class="container-fluid px-md-5 mt-5 mb-5">
     <div class="row mb-4 px-md-2">
-        <div class="col-12">
-            <div class="d-flex align-items-center">
-                <div class="p-3 bg-white rounded-3 shadow-sm d-inline-block me-3">
-                    <i class="bi bi-kanban fs-3 text-primary" style="color: #ffffff !important;"></i>
-                </div>
-                <div>
-                    <h1 class="mb-0 fw-bold h3" style="color: #1f2937;">Gestion Tâches</h1>
-                    <p class="text-muted mb-0 small">Choisir un projet pour acceder à ses tâches.</p>
-                </div>
-            </div>
+      <div class="col-12">
+        <div class="d-flex align-items-center">
+          <div class="p-3 bg-white rounded-3 shadow-sm d-inline-block me-3">
+            <i class="bi bi-list-task fs-3 text-primary"></i>
+          </div>
+          <div>
+            <h1 class="mb-0 fw-bold h3" style="color: #1f2937;">Gestion Tâches</h1>
+            <p class="text-muted mb-0 small">Choisir un project pour acceder à ses tâches.</p>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 
   <div class="container mt-5 mb-5">
 
@@ -347,9 +333,24 @@
           </button>
           <h3 class="mb-0 fw-bold" style="color: #1f2937;" id="titreProjetActuel">Tâches du projet</h3>
         </div>
-        <button class="btn btn-primary shadow-sm px-4 py-2" data-bs-toggle="modal" data-bs-target="#addTaskModal" style="background-color: #3c3489; border: none;">
-          <i class="bi bi-plus-lg me-2"></i>Nouvelle tâche
-        </button>
+        
+        <div class="d-flex gap-2">
+          <button id="btnProjectActivity" class="btn btn-outline-secondary shadow-sm px-3 py-2 d-flex align-items-center" title="Historique du projet" onclick="(() => {
+            const params = new URLSearchParams(window.location.search);
+            const projectId = params.get('id') || params.get('projectId');
+            if (projectId) {
+              window.location.href = `activities.html?id=${projectId}`;
+            } else {
+              window.location.href = 'activities.html';
+            }
+          })()">
+            <i class="bi bi-clock-history me-2"></i>Activité
+          </button>
+
+          <button class="btn btn-primary shadow-sm px-4 py-2" data-bs-toggle="modal" data-bs-target="#addTaskModal" style="background-color: #3c3489; border: none;">
+            <i class="bi bi-plus-lg me-2"></i>Nouvelle tâche
+          </button>
+        </div>
       </div>
 
       <div class="filter-section mb-4">
@@ -402,16 +403,14 @@
         <h4 class="text-primary mb-4 fw-bold">
           <i class="bi bi-list-task me-2"></i>Toutes les Tâches
         </h4>
-        <div id="taskList" class="row g-4">
-        </div>
+        <div id="taskList" class="row g-4"></div>
       </div>
       
-
       <div id="pagination" class="d-flex justify-content-center align-items-center gap-3 mt-5"></div>
     </div> 
   </div> 
 
-<div class="modal fade" id="addTaskModal" tabindex="-1">
+  <div class="modal fade" id="addTaskModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content shadow" style="border-radius: 16px; border: none;">
         <div class="modal-header" style="background-color: #3c3489; border-radius: 16px 16px 0 0;">
