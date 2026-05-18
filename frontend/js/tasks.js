@@ -46,6 +46,8 @@ if (btnRetourProjets) {
 
 // INITIALISATION AU CHARGEMENT DE LA PAGE
 document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('id') || params.get('projectId');
     if (projetActuelId) {
         vueProjets.classList.add('d-none');
         vueTaches.classList.remove('d-none');
@@ -199,6 +201,8 @@ window.changerPageDroite = function(newPage) {
 }
 
 function ouvrirVueTaches(projectId, projectTitle) {
+    // Add this inside your project-loading function in js/tasks.js
+    history.pushState(null, '', `tasks.html?id=${projectId}`);
     projetActuelId = projectId; 
     titreProjetActuel.innerHTML = `<small>Projet</small> : <strong style="color: #ffc402e0; ">${projectTitle}</strong>`;
     
