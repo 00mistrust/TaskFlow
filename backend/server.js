@@ -20,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', require('./src/routes/tasks'));
 app.use('/api/dashboard', require('./src/routes/dashboard'));
 app.use('/api/projects', require('./src/routes/projects'));
+app.use('/api/notifications', require('./src/routes/notifications'));
 
 app.get('/', (req, res) => res.json({ message: 'Nice Job Team, pround of you ALL, now time to show up !' }));
 
