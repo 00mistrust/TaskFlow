@@ -10,7 +10,6 @@
   <style>
     .projects-grid {
       display: grid;
-      /* Wider base width and larger gap to make it look less cramped (moyen/grand) */
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 30px; 
       margin-top: 24px;
@@ -18,13 +17,10 @@
     
     .project-pack-card {
       background: #ffffff;
-      /* Removed all borders as requested */
       border: none;
       border-radius: 16px;
-      /* Balanced medium footprint with good internal spacing */
       padding: 24px;
       text-align: left;
-      /* Rich, deep multi-layered modern shadow instead of borders */
       box-shadow: 0 12px 30px -5px rgba(15, 23, 42, 0.1), 
                   0 6px 16px -2px rgba(15, 23, 42, 0.05);
       cursor: pointer;
@@ -37,20 +33,14 @@
     
     .project-pack-card:hover {
       transform: translateY(-4px);
-      /* Deeper shadow elevation on hover */
       box-shadow: 0 24px 45px -10px rgba(15, 23, 42, 0.15), 
                   0 10px 24px -4px rgba(15, 23, 42, 0.08);
     }
 
-    /* Target the button from your image/JS output based on the original class structure */
     .btn-outline-secondary {
-      /* Removed borders entirely */
       border: none !important;
-      /* Perfect pill shape */
       border-radius: 100px !important;
-      /* Generous full-color background */
       background: #3c3489 !important;
-      /* White text with better organization/padding */
       color: #ffffff !important;
       font-size: 0.8rem !important;
       font-weight: 600 !important;
@@ -59,11 +49,10 @@
     }
 
     .btn-outline-secondary:hover {
-      background: #1a1a1a !important; /* Neutral highlight */
+      background: #1a1a1a !important;
       color: #ffffff !important;
     }
 
-    /* Left panel elements alignment within the card */
     .project-meta-left {
       display: flex;
       align-items: center;
@@ -95,7 +84,6 @@
       text-overflow: ellipsis;
     }
 
-    /* Rich Timeline Spacing (What happens inside after click) */
     .timeline-container {
       position: relative;
       margin-top: 40px;
@@ -115,7 +103,6 @@
       background: linear-gradient(to bottom, #3c3489, #e2e8f0 90%);
     }
     
-    /* Borderless, Shadow-Based Activity Cards */
     .activity-item {
       position: relative;
       background: #ffffff;
@@ -136,7 +123,6 @@
                   0 6px 12px -2px rgba(15, 23, 42, 0.03);
     }
     
-    /* Dynamic floating outer ring nodes */
     .activity-item::before {
       content: '';
       position: absolute;
@@ -152,7 +138,6 @@
       z-index: 2;
     }
     
-    /* Typography Organization */
     .activity-text {
       color: #475569;
       font-size: 0.95rem;
@@ -160,7 +145,7 @@
     }
 
     .activity-text strong { 
-      color: #3c3489; /* brand color accent */
+      color: #3c3489;
       font-weight: 600;
     }
     
@@ -180,27 +165,26 @@
       padding: 100px 20px;
       color: #94a3b8;
     }
-    /* Custom styling for your specific span-based button */
-span.btn.btn-sm.btn-outline-primary {
-  background-color: #7d7bff !important; /* Full solid purple color */
-  color: #ffffff !important;            /* Pure white text */
-  border: none !important;             /* Completely removes the ugly borders */
-  border-radius: 100px !important;     /* Makes it a beautiful rounded pill shape */
-  padding: 8px 20px !important;        /* Generous spacing inside the button */
-  font-weight: 600 !important;
-  font-size: 0.85rem !important;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease-in-out;
-}
 
-/* Subtle neutral dark shade on hover */
-span.btn.btn-sm.btn-outline-primary:hover {
-  background-color: #ab75b9 !important; /* Elegant deeper purple shade */
-  color: #ffffff !important;
-}
+    span.btn.btn-sm.btn-outline-primary {
+      background-color: #7d7bff !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 100px !important;
+      padding: 8px 20px !important;
+      font-weight: 600 !important;
+      font-size: 0.85rem !important;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease-in-out;
+    }
+
+    span.btn.btn-sm.btn-outline-primary:hover {
+      background-color: #ab75b9 !important;
+      color: #ffffff !important;
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -258,8 +242,18 @@ span.btn.btn-sm.btn-outline-primary:hover {
     </div>
 
     <div id="packsSection">
-      <div class="projects-grid" id="projectsGrid">
+      <div class="d-flex justify-content-start mb-4" id="filterWrapper">
+        <div style="max-width: 250px; width: 100%;">
+          <label for="projectFilter" class="form-label small text-muted fw-bold mb-1">Filtrer par type :</label>
+          <select class="form-select form-select-sm" id="projectFilter" style="border-radius: 100px; padding: 6px 16px; border: 1px solid #e2e8f0; font-size: 0.85rem; font-weight: 500; color: #475569;">
+            <option value="all" selected>Tous les projets</option>
+            <option value="mine">Mes projets</option>
+            <option value="shared">Partagés avec moi</option>
+          </select>
         </div>
+      </div>
+
+      <div class="projects-grid" id="projectsGrid"></div>
     </div>
 
     <div id="feedSection" style="display: none;">
@@ -271,7 +265,6 @@ span.btn.btn-sm.btn-outline-primary:hover {
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
   <script src="js/activities.js"></script>
 </body>
 </html>
