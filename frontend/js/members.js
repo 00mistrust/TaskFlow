@@ -11,8 +11,14 @@ if (!token) {
 
 async function loadMembers() {
     if (!PROJECT_ID) {
-        document.getElementById('membersList').innerHTML = `<div class="alert alert-warning">Il faut aller vers projets , creer un projet et cliquer sur le bouton membre pour assigner un membre au projet specifique</div>`;
-        return; // J'ai retiré le code cassé ici
+    document.getElementById('membersList').innerHTML = `
+            <div class="alert alert-warning text-center">
+                <p class="mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i> Il faut aller vers projets, créer un projet et cliquer sur le bouton membre pour assigner un membre au projet spécifique.</p>
+                <a href="projects.html" class="btn btn-sm text-white px-3" style="background-color: #3c3489; border-radius: 6px;">
+                    <i class="bi bi-folder me-1"></i> Aller aux projets
+                </a>
+            </div>`;
+        return;
     }
     
     try {
