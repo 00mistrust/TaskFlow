@@ -96,6 +96,8 @@ exports.createTask = async (req, res) => {
         await project.save(); // Saved automatically to project schema array!
       }
     }
+    //enregistrement d activité
+    await logActivity('task_created', projectId, userId, `A créé la tâche "${title}"`);
 
     res.status(201).json(task);
   } catch (error) {
@@ -138,7 +140,7 @@ exports.updateTask = async (req, res) => {
   }
 };
 
-// 3. PATCH /:id/status (Status Update Only)
+// Status Update Only
 exports.updateTaskStatus = async (req, res) => {
   try {
     const taskId = req.params.id;
@@ -168,6 +170,9 @@ exports.updateTaskStatus = async (req, res) => {
     task.status = status;
     await task.save();
 
+    // ENREGISTREMENT DE L'ACTIVITÉ
+    await logActivity('task_status_changed', project._id, userId, `A changé le statut de la tâche "${task.title}" en "${status}"`);
+
     res.json({ message: "Statut mis à jour", task });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -180,9 +185,7 @@ exports.deleteTask = async (req, res) => {
     const task = await Task.findByIdAndDelete(req.params.id);
     if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
 
-    // Décommente ça quand ton système d'activité marchera
     await logActivity('task_deleted', task.project, req.user.id, `A supprimé la tâche "${task.title}"`);
-
 
     res.json({ message: 'Tâche supprimée' });
   } catch (err) {

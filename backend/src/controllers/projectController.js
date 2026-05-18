@@ -1,6 +1,7 @@
 const Project = require('../models/Project');
 const User = require('../models/user'); 
 const Task = require('../models/task');
+const { logActivity } = require('./activityController');
 
 // Récupérer tous les projets (propriétaire OU membre)
 exports.getAllProjects = async (req, res) => {
@@ -75,6 +76,7 @@ exports.updateProject = async (req, res) => {
             { new: true }
         );
         if (!project) return res.status(404).json({ error: 'Project non trouvé' });
+        await logActivity('project_updated', req.params.id, req.user.id, `A modifié les informations du projet`);
         res.json(project);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -103,6 +105,9 @@ exports.inviteMember = async (req, res) => {
         project.members.push(userToAdd._id);
         await project.save();
 
+        // On utilise userToAdd.name (ou .nom ou .email selon ton modèle User)
+        await logActivity('member_added', req.params.id, req.user.id, `A ajouté ${userToAdd.email} au projet`);
+
         res.json({ message: 'Member added successfully', project });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -123,12 +128,13 @@ exports.removeMember = async (req, res) => {
         project.members = project.members.filter(m => m.toString() !== req.params.memberId);
         await project.save();
 
-        // CORRECTION 2: On utilise req.params.memberId au lieu de userId
+        //  On utilise req.params.memberId au lieu de userId
         await Task.deleteMany({
             project: req.params.id,
             assignedTo: req.params.memberId
         });
 
+        await logActivity('member_removed', req.params.id, req.user.id, `A retiré ${userToRemove.email} du projet`);
         res.json({ message: 'Membre et ses tâches retirés avec succès' });
     } catch (err) {
         res.status(500).json({ error: err.message });

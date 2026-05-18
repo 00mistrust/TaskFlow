@@ -1,25 +1,34 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middleware/auth');
 const projectController = require('../controllers/projectController');
 
-const authMiddleware = require('../middleware/auth'); 
+//  On importe le vrai nom de la fonction (getActivities)
+const { getActivities } = require('../controllers/activityController');
+
 
 // Créer un projet 
-router.post('/', authMiddleware, projectController.createProject);
-//display all projects 
-router.get('/', authMiddleware, projectController.getAllProjects);
-// recuper projet specifique
-router.get('/:id', authMiddleware, projectController.getProjectById);
+router.post('/', auth, projectController.createProject);
 
-//updsate project
-router.put('/:id', authMiddleware, projectController.updateProject);
+// Afficher tous les projets 
+router.get('/', auth, projectController.getAllProjects);
 
-// invite memberby email
-router.post('/:id/invite', authMiddleware, projectController.inviteMember);
+// Récupérer un projet spécifique
+router.get('/:id', auth, projectController.getProjectById);
 
-// 7ayd membre
-router.delete('/:id/members/:memberId', authMiddleware, projectController.removeMember);
+//  On utilise getActivities
+router.get('/:id/activities', auth, getActivities);
+
+// Mettre à jour le projet
+router.put('/:id', auth, projectController.updateProject);
+
+// Inviter un membre par email
+router.post('/:id/invite', auth, projectController.inviteMember);
+
+// Retirer un membre
+router.delete('/:id/members/:memberId', auth, projectController.removeMember);
+
 // Supprimer un projet
-router.delete('/:id', authMiddleware, projectController.deleteProject);
+router.delete('/:id', auth, projectController.deleteProject);
 
 module.exports = router;
