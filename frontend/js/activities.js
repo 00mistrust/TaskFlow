@@ -54,7 +54,7 @@
             <div class="folder-icon"><i class="bi bi-folder-fill"></i></div>
             <h4 class="fw-bold text-dark mb-1">${project.title}</h4>
             <small class="text-muted d-block mb-3">${project.description || 'Pas de description'}</small>
-            <span class="btn btn-sm btn-outline-primary" style="border-color:#3c3489; color:#3c3489;">Ouvrir l'historique</span>
+            <span class="btn btn-sm btn-outline-primary" style="border-color:#3c3489; color:#3c3489;">ouvrir</span>
           `;
           grid.appendChild(card);
         });

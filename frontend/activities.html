@@ -10,82 +10,197 @@
   <style>
     .projects-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 25px;
-      margin-top: 20px;
+      /* Wider base width and larger gap to make it look less cramped (moyen/grand) */
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 30px; 
+      margin-top: 24px;
     }
+    
     .project-pack-card {
-      background: white;
-      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      /* Removed all borders as requested */
+      border: none;
       border-radius: 16px;
-      padding: 30px 20px;
-      text-align: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      /* Balanced medium footprint with good internal spacing */
+      padding: 24px;
+      text-align: left;
+      /* Rich, deep multi-layered modern shadow instead of borders */
+      box-shadow: 0 12px 30px -5px rgba(15, 23, 42, 0.1), 
+                  0 6px 16px -2px rgba(15, 23, 42, 0.05);
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    
     .project-pack-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(60, 52, 137, 0.15);
-      border-color: #3c3489;
+      transform: translateY(-4px);
+      /* Deeper shadow elevation on hover */
+      box-shadow: 0 24px 45px -10px rgba(15, 23, 42, 0.15), 
+                  0 10px 24px -4px rgba(15, 23, 42, 0.08);
     }
+
+    /* Target the button from your image/JS output based on the original class structure */
+    .btn-outline-secondary {
+      /* Removed borders entirely */
+      border: none !important;
+      /* Perfect pill shape */
+      border-radius: 100px !important;
+      /* Generous full-color background */
+      background: #3c3489 !important;
+      /* White text with better organization/padding */
+      color: #ffffff !important;
+      font-size: 0.8rem !important;
+      font-weight: 600 !important;
+      padding: 8px 18px !important;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-outline-secondary:hover {
+      background: #1a1a1a !important; /* Neutral highlight */
+      color: #ffffff !important;
+    }
+
+    /* Left panel elements alignment within the card */
+    .project-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
     .folder-icon {
-      font-size: 3.5rem;
+      font-size: 1.1rem;
       color: #ffca28;
-      margin-bottom: 15px;
+      margin-bottom: 0 !important;
+      background: rgba(255, 202, 40, 0.12);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      flex-shrink: 0;
     }
+
+    .project-name-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #0f172a;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Rich Timeline Spacing (What happens inside after click) */
     .timeline-container {
       position: relative;
-      margin-top: 30px;
-      padding-left: 24px;
+      margin-top: 40px;
+      padding-left: 35px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
+    
     .timeline-container::before {
       content: '';
       position: absolute;
-      left: 0;
-      top: 5px;
-      bottom: 5px;
-      width: 3px;
-      background: #3c3489;
-      border-radius: 2px;
+      left: 6px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: linear-gradient(to bottom, #3c3489, #e2e8f0 90%);
     }
+    
+    /* Borderless, Shadow-Based Activity Cards */
     .activity-item {
       position: relative;
-      background: white;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      background: #ffffff;
+      border: none;
+      padding: 18px 24px;
+      margin-bottom: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px -6px rgba(15, 23, 42, 0.04),
+                  0 4px 8px -2px rgba(15, 23, 42, 0.02);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      transition: all 0.2s ease;
     }
+
+    .activity-item:hover {
+      box-shadow: 0 12px 24px -5px rgba(15, 23, 42, 0.06),
+                  0 6px 12px -2px rgba(15, 23, 42, 0.03);
+    }
+    
+    /* Dynamic floating outer ring nodes */
     .activity-item::before {
       content: '';
       position: absolute;
-      left: -29px;
+      left: -33px;
       top: 50%;
       transform: translateY(-50%);
-      width: 12px;
-      height: 12px;
-      background: #3c3489;
-      border: 3px solid #f8f9fa;
+      width: 10px;
+      height: 10px;
+      background: #ffffff;
+      border: 3px solid #3c3489;
+      box-shadow: 0 0 0 4px rgba(60, 52, 137, 0.08);
       border-radius: 50%;
+      z-index: 2;
     }
-    .activity-text strong { color: #1a1a1a; }
+    
+    /* Typography Organization */
+    .activity-text {
+      color: #475569;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .activity-text strong { 
+      color: #3c3489; /* brand color accent */
+      font-weight: 600;
+    }
+    
     .activity-time {
-      font-size: 0.85rem;
-      color: #6b7280;
+      font-size: 0.8rem;
+      color: #64748b;
       font-weight: 500;
       white-space: nowrap;
-      margin-left: 15px;
+      margin-left: 24px;
+      background: #f1f5f9;
+      padding: 5px 12px;
+      border-radius: 100px;
     }
+    
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
-      color: #9ca3af;
+      padding: 100px 20px;
+      color: #94a3b8;
     }
+    /* Custom styling for your specific span-based button */
+span.btn.btn-sm.btn-outline-primary {
+  background-color: #7d7bff !important; /* Full solid purple color */
+  color: #ffffff !important;            /* Pure white text */
+  border: none !important;             /* Completely removes the ugly borders */
+  border-radius: 100px !important;     /* Makes it a beautiful rounded pill shape */
+  padding: 8px 20px !important;        /* Generous spacing inside the button */
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Subtle neutral dark shade on hover */
+span.btn.btn-sm.btn-outline-primary:hover {
+  background-color: #ab75b9 !important; /* Elegant deeper purple shade */
+  color: #ffffff !important;
+}
   </style>
 </head>
 <body class="bg-light">
@@ -133,15 +248,18 @@
 
   <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 style="color: #3c3489;" id="pageTitle"><strong>Historique des activités</strong></h2>
-      <button class="btn btn-outline-secondary btn-sm" id="btnBack" style="display: none;" onclick="showPacksView()">
+      <div>
+        <h2 style="color: #3c3489;" id="pageTitle" class="fs-4 mb-1"><strong>Historique des activités</strong></h2>
+        <p class="text-muted small mb-0" id="pageSubtitle">Sélectionnez un pack projet pour explorer les actions récentes de votre équipe.</p>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="btnBack" style="display: none;" onclick="showPacksView()">
         <i class="bi bi-arrow-left me-1"></i>Retour aux packs projets
       </button>
     </div>
 
     <div id="packsSection">
-      <p class="text-muted">Sélectionnez un pack projet ci-dessous pour consulter son fil chronologique complet.</p>
-      <div class="projects-grid" id="projectsGrid"></div>
+      <div class="projects-grid" id="projectsGrid">
+        </div>
     </div>
 
     <div id="feedSection" style="display: none;">
