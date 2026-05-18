@@ -8,49 +8,83 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    .activity-item {
-      border-left: 3px solid #3c3489;
-      padding: 12px 16px;
-      margin-bottom: 12px;
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+    }
+    .project-pack-card {
       background: white;
-      border-radius: 0 12px 12px 0;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 30px 20px;
+      text-align: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+    }
+    .project-pack-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(60, 52, 137, 0.15);
+      border-color: #3c3489;
+    }
+    .folder-icon {
+      font-size: 3.5rem;
+      color: #ffca28;
+      margin-bottom: 15px;
+    }
+    .timeline-container {
+      position: relative;
+      margin-top: 30px;
+      padding-left: 24px;
+    }
+    .timeline-container::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 5px;
+      bottom: 5px;
+      width: 3px;
+      background: #3c3489;
+      border-radius: 2px;
+    }
+    .activity-item {
+      position: relative;
+      background: white;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    .activity-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
     }
-    .icon-task-created   { background: #e0f2fe; color: #0369a1; }
-    .icon-task-deleted   { background: #fee2e2; color: #dc2626; }
-    .icon-task-status    { background: #fef9c3; color: #ca8a04; }
-    .icon-member-added   { background: #dcfce7; color: #16a34a; }
-    .icon-member-removed { background: #fee2e2; color: #dc2626; }
-    .icon-project        { background: #ede9fe; color: #7c3aed; }
+    .activity-item::before {
+      content: '';
+      position: absolute;
+      left: -29px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      background: #3c3489;
+      border: 3px solid #f8f9fa;
+      border-radius: 50%;
+    }
+    .activity-text strong { color: #1a1a1a; }
+    .activity-time {
+      font-size: 0.85rem;
+      color: #6b7280;
+      font-weight: 500;
+      white-space: nowrap;
+      margin-left: 15px;
+    }
     .empty-state {
       text-align: center;
       padding: 60px 20px;
       color: #9ca3af;
-    }
-    .timeline-date {
-      font-size: 0.75rem;
-      color: #6b7280;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin: 20px 0 10px;
-    }
-    .example-box {
-      background: #f5f3ff;
-      border-left: 4px solid #3c3489;
-      border-radius: 0 12px 12px 0;
-      padding: 16px 20px;
-      margin-bottom: 12px;
     }
   </style>
 </head>
@@ -65,35 +99,17 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="dashboard.html">
-            <i class="bi bi-speedometer2 me-1"></i>Tableau de bord
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="projects.html">
-            <i class="bi bi-folder me-1"></i>Projets
-          </a>
-        </li>
-              <li class="nav-item">
-        <a class="nav-link" href="members.html">
-          <i class="bi bi-people me-1"></i>Membres
-        </a>
-        <li class="nav-item">
-          <a class="nav-link" href="tasks.html">
-            <i class="bi bi-check2-square me-1"></i>Tâches
-          </a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2 me-1"></i>Tableau de bord</a></li>
+        <li class="nav-item"><a class="nav-link" href="projects.html"><i class="bi bi-folder me-1"></i>Projets</a></li>
+        <li class="nav-item"><a class="nav-link" href="members.html"><i class="bi bi-people me-1"></i>Membres</a></li>
+        <li class="nav-item"><a class="nav-link" href="tasks.html"><i class="bi bi-check2-square me-1"></i>Tâches</a></li>
       </ul>
       <ul class="navbar-nav ms-auto align-items-center">
-        <!-- Icône Historique -->
         <li class="nav-item me-3">
           <a class="nav-link active" href="activities.html" title="Historique des activités">
             <i class="bi bi-clock-history fs-5"></i>
           </a>
         </li>
-        <!-- Icône Notifications -->
-
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="notifications.html">
             <i class="bi bi-bell-fill fs-5"></i>
@@ -117,144 +133,27 @@
 
   <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 style="color: #3c3489;"><strong>Historique des activités</strong></h2>
-      <a href="projects.html" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Retour aux projets
-      </a>
+      <h2 style="color: #3c3489;" id="pageTitle"><strong>Historique des activités</strong></h2>
+      <button class="btn btn-outline-secondary btn-sm" id="btnBack" style="display: none;" onclick="showPacksView()">
+        <i class="bi bi-arrow-left me-1"></i>Retour aux packs projets
+      </button>
     </div>
 
-    <div id="activityFeed">
-      <div class="empty-state">
-        <i class="bi bi-hourglass-split fs-1 mb-3 d-block"></i>
-        <p>Chargement des activités...</p>
-      </div>
+    <div id="packsSection">
+      <p class="text-muted">Sélectionnez un pack projet ci-dessous pour consulter son fil chronologique complet.</p>
+      <div class="projects-grid" id="projectsGrid"></div>
     </div>
+
+    <div id="feedSection" style="display: none;">
+      <div class="timeline-container" id="timelineContainer"></div>
+    </div>
+
+    <div id="statusMessage" class="empty-state" style="display: none;"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script>
-    const token = localStorage.getItem('token');
-    if (!token) window.location.href = 'login.html';
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.name) document.getElementById('userName').textContent = user.name;
-
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = 'login.html';
-    });
-
-    const params = new URLSearchParams(window.location.search);
-    const PROJECT_ID = params.get('id');
-
-    function getIcon(actionType) {
-      const icons = {
-        'task_created':        { cls: 'icon-task-created',   icon: 'bi-plus-circle' },
-        'task_deleted':        { cls: 'icon-task-deleted',   icon: 'bi-trash' },
-        'task_status_changed': { cls: 'icon-task-status',    icon: 'bi-arrow-repeat' },
-        'member_added':        { cls: 'icon-member-added',   icon: 'bi-person-plus' },
-        'member_removed':      { cls: 'icon-member-removed', icon: 'bi-person-dash' },
-        'project_updated':     { cls: 'icon-project',        icon: 'bi-pencil-square' }
-      };
-      return icons[actionType] || { cls: 'icon-project', icon: 'bi-info-circle' };
-    }
-
-    function timeAgo(dateStr) {
-      const now = new Date();
-      const date = new Date(dateStr);
-      const diff = Math.floor((now - date) / 1000);
-      if (diff < 60) return 'il y a quelques secondes';
-      if (diff < 3600) return `il y a ${Math.floor(diff / 60)} minutes`;
-      if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} heures`;
-      return `il y a ${Math.floor(diff / 86400)} jours`;
-    }
-
-    function formatDate(dateStr) {
-      return new Date(dateStr).toLocaleDateString('fr-FR', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-      });
-    }
-
-    function showNoProject() {
-      document.getElementById('activityFeed').innerHTML = `
-        <div class="empty-state">
-          <i class="bi bi-clock-history fs-1 mb-3 d-block" style="color:#3c3489;"></i>
-          <div class="example-box text-start mb-4" style="max-width:500px;margin:0 auto;">
-           <p class="mb-1"><strong><center>Historique est vide</strong></p>  
-          </div>
-          <p class="text-muted small">Sélectionnez un projet pour voir son historique réel.</p>
-          <a href="projects.html" class="btn btn-primary mt-2" style="background-color:white; border-color:#3c3489;">
-            <i class="bi-folder me-1"></i><strong>voir mes projets</strong>
-        </div>`;
-    }
-
-    async function loadActivities() {
-      if (!PROJECT_ID) {
-        showNoProject();
-        return;
-      }
-
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/projects/${PROJECT_ID}/activities`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        const activities = res.data;
-        const feed = document.getElementById('activityFeed');
-
-        if (!activities || activities.length === 0) {
-          feed.innerHTML = `
-            <div class="empty-state">
-              <i class="bi bi-inbox fs-1 mb-3 d-block"></i>
-              <p>Aucune activité pour ce projet.</p>
-            </div>`;
-          return;
-        }
-
-        let currentDate = '';
-        let html = '';
-
-        activities.forEach(activity => {
-          const actDate = formatDate(activity.createdAt);
-          if (actDate !== currentDate) {
-            currentDate = actDate;
-            html += `<div class="timeline-date">${actDate}</div>`;
-          }
-
-          const { cls, icon } = getIcon(activity.actionType);
-          const userName = activity.user?.name || 'Utilisateur';
-          const ago = timeAgo(activity.createdAt);
-
-          html += `
-            <div class="activity-item d-flex align-items-start gap-3">
-              <div class="activity-icon ${cls}">
-                <i class="bi ${icon}"></i>
-              </div>
-              <div class="flex-grow-1">
-                <p class="mb-0" style="color: #1f2937;">
-                  <strong>${userName}</strong> ${activity.description} — 
-                  <span class="text-muted fst-italic">${ago}</span>
-                </p>
-              </div>
-            </div>`;
-        });
-
-        feed.innerHTML = html;
-      } catch (err) {
-        if (err.response?.status === 401) window.location.href = 'login.html';
-        document.getElementById('activityFeed').innerHTML = `
-          <div class="empty-state">
-            <i class="bi bi-exclamation-circle fs-1 mb-3 d-block text-danger"></i>
-            <p>Erreur lors du chargement des activités.</p>
-          </div>`;
-      }
-    }
-
-    loadActivities();
-  </script>
-  <script src="js/navbar.js"></script>
+  <script src="js/activities.js"></script>
 </body>
 </html>
