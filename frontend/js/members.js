@@ -1,7 +1,7 @@
 const BASE_URL = 'http://localhost:5000/api/projects';
 const token = localStorage.getItem('token');
 
-//get project id from url
+// Get project id from url
 const params = new URLSearchParams(window.location.search);
 const PROJECT_ID = params.get('id');
 
@@ -9,10 +9,34 @@ if (!token) {
     window.location.href = 'login.html';
 }
 
+// Helper function to decode the JWT token and get the logged-in user's ID
+function getCurrentUserId() {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const decoded = JSON.parse(jsonPayload);
+        // Returns the user ID (adjusts to 'id' or '_id' depending on your backend JWT payload structure)
+        return decoded.id || decoded._id; 
+    } catch (error) {
+        console.error("Erreur lors du décodage du token :", error);
+        return null;
+    }
+}
+
 async function loadMembers() {
     if (!PROJECT_ID) {
-        document.getElementById('membersList').innerHTML = `<div class="alert alert-warning">Il faut aller vers projets , creer un projet et cliquer sur le bouton membre pour assigner un membre au projet specifique</div>`;
-        return; // J'ai retiré le code cassé ici
+        document.getElementById('membersList').innerHTML = `
+            <div class="alert alert-warning text-center">
+                <p class="mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i> Il faut aller vers projets, créer un projet et cliquer sur le bouton membre pour assigner un membre au projet spécifique.</p>
+                <a href="projects.html" class="btn btn-sm text-white px-3" style="background-color: #8f8d73; border-radius: 6px;">
+                    <i class="bi bi-folder me-1"></i> Aller aux projets
+                </a>
+            </div>`;
+        return;
     }
     
     try {
@@ -22,15 +46,24 @@ async function loadMembers() {
         
         const project = res.data.data || res.data;
 
-//  Injection du nom du projet sous "Membres actuels"
-const titleElement = document.getElementById('projectTitle');
-if (titleElement && project.title) {
-    titleElement.innerHTML = `<i class="bi bi-folder me-1"></i> Projet : <span class="text-warning fw-bold">${project.title}</span>`;
-}
-        // ------------------------------------------
+        // Injection du nom du projet sous "Membres actuels"
+        const titleElement = document.getElementById('projectTitle');
+        if (titleElement && project.title) {
+            titleElement.innerHTML = `<i class="bi bi-folder me-1"></i> Projet : <span class="text-warning fw-bold">${project.title}</span>`;
+        }
 
         const members = project.members || [];
         const ownerId = project.owner._id || project.owner; 
+        const currentUserId = getCurrentUserId();
+
+        // Check ownership
+        const isOwner = currentUserId === ownerId;
+
+        // Hide or Show the "Invite a member" card block based on ownership
+        const inviteCard = document.getElementById('inviteCard');
+        if (inviteCard) {
+            inviteCard.style.display = isOwner ? 'block' : 'none';
+        }
         
         const badgeElement = document.querySelector('.badge.bg-secondary');
         if (badgeElement) badgeElement.textContent = `${members.length} membres`;
@@ -42,23 +75,34 @@ if (titleElement && project.title) {
             return;
         }
 
-        // LE BOUTON ASSIGNER 
-        listDiv.innerHTML = members.map(member => `
+        // Render members list with conditional buttons
+        listDiv.innerHTML = members.map(member => {
+            // Check if this loop item is the actual owner (optional styling tip: maybe highlight them!)
+            const isMemberOwner = member._id === ownerId;
+
+            return `
             <div class="d-flex justify-content-between align-items-center border-bottom py-2">
                 <div class="text-start">
-                    <strong><i class="bi bi-person-circle me-2"></i>${member.nom || member.name || 'Utilisateur'}</strong>
+                    <strong>
+                        <i class="bi bi-person-circle me-2"></i>${member.nom || member.name || 'Utilisateur'}
+                        ${isMemberOwner ? '<span class="badge bg-primary ms-2" style="font-size:0.7rem;">Propriétaire</span>' : ''}
+                    </strong>
                     <br><small class="text-muted ms-4">${member.email}</small>
                 </div>
                 <div>
-                    <a href="tasks.html?id=${PROJECT_ID}&assignTo=${member._id}" class="btn btn-sm btn-success me-2">
-                        <i class="bi bi-plus-circle"></i> Assigner une tâche
-                    </a>
-                    <button class="btn btn-outline-danger btn-sm" onclick="removeMember('${member._id}')">
-                        <i class="bi bi-person-x"></i> Retirer
-                    </button>
+                    ${isOwner ? `
+                        <a href="tasks.html?id=${PROJECT_ID}&assignTo=${member._id}" class="btn btn-sm btn-success me-2">
+                            <i class="bi bi-plus-circle"></i> Assigner une tâche
+                        </a>
+                        ${!isMemberOwner ? `
+                            <button class="btn btn-outline-danger btn-sm" onclick="removeMember('${member._id}')">
+                                <i class="bi bi-person-x"></i> Retirer
+                            </button>
+                        ` : ''}
+                    ` : ''}
                 </div>
             </div>
-        `).join('');
+        `}).join('');
 
     } catch (err) {
         console.error("Erreur complète :", err);
@@ -89,18 +133,12 @@ document.getElementById('addMemberForm').addEventListener('submit', async (e) =>
     }
 });
 
-// if u wanna delete a member
+// Remove a member
 window.removeMember = async function(memberId) {
     if (!confirm("Êtes-vous sûr de vouloir retirer ce membre du projet ?")) return;
 
-    // 1. We store the URL in a variable first so we can look at it
     const requestUrl = `${BASE_URL}/${PROJECT_ID}/members/${memberId}`;
     
-    // 2. Print exactly what variables we have
-    console.log("🛠️ PROJECT_ID :", PROJECT_ID);
-    console.log("🛠️ memberId :", memberId);
-    console.log("🚀 URL appelée :", requestUrl);
-
     try {
         await axios.delete(requestUrl, {
             headers: { Authorization: `Bearer ${token}` }
@@ -108,8 +146,7 @@ window.removeMember = async function(memberId) {
         alert("Membre retiré !");
         loadMembers(); 
     } catch (err) {
-        // 3. Print the exact error if Axios fails
-        console.error(" Erreur de la requête Axios :", err);
+        console.error("Erreur de la requête Axios :", err);
         alert(err.response?.data?.msg || err.response?.data?.error || "Erreur lors de la suppression");
     }
 };

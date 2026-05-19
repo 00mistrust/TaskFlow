@@ -19,6 +19,7 @@ const authRoutes = require('./src/routes/auth');
 const projectRoutes = require('./src/routes/projects');
 const taskRoutes = require('./src/routes/tasks');
 const dashboardRoutes = require('./src/routes/dashboard');
+app.use('/api/notifications', require('./src/routes/notifications'));
 
 // Déclaration des endpoints de l'API
 app.use('/api/auth', authRoutes);

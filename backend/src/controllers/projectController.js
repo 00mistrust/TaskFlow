@@ -117,24 +117,34 @@ exports.inviteMember = async (req, res) => {
 // Supprimer un membre
 exports.removeMember = async (req, res) => {
     try {
+        // 1. Fetch the project
         const project = await Project.findById(req.params.id);
         if (!project) return res.status(404).json({ error: 'Project not found' });
   
+        // 2. Authorization check
         if (project.owner.toString() !== req.user.id) {
             return res.status(403).json({ error: 'Only the owner can modify project members' });
         }
 
-        // CORRECTION 1: On utilise req.params.memberId au lieu de userId
+        // 3. Match and grab the user using the frontend's 'memberId' param
+        const userToRemove = await User.findById(req.params.memberId);
+        if (!userToRemove) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        }
+
+        // 4. Remove them from the project array
         project.members = project.members.filter(m => m.toString() !== req.params.memberId);
         await project.save();
 
-        //  On utilise req.params.memberId au lieu de userId
+        // 5. Wipe out their tasks for this specific project
         await Task.deleteMany({
             project: req.params.id,
             assignedTo: req.params.memberId
         });
 
+        // 6. Log the activity smoothly with the email we fetched in step 3
         await logActivity('member_removed', req.params.id, req.user.id, `A retiré ${userToRemove.email} du projet`);
+        
         res.json({ message: 'Membre et ses tâches retirés avec succès' });
     } catch (err) {
         res.status(500).json({ error: err.message });
