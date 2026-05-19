@@ -19,7 +19,7 @@ const logActivity = async (actionType, projectId, userId, description) => {
 exports.getActivities = async (req, res) => {
   try {
     const activities = await Activity.find({ project: req.params.id })
-      .populate('user', 'name email')
+      .populate('user', 'nom email')
       .sort({ createdAt: -1 });
     res.json(activities);
   } catch (err) {

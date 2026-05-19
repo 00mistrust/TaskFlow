@@ -1,24 +1,25 @@
+const mongoose = require('mongoose');
 const Task = require('../models/task');
+const Project = require('../models/Project');
 const { logActivity } = require('./activityController'); 
 
-// GET /project/:projectId
+// Secure Model Reference using your precise case name configuration
+const TaskModel = mongoose.model('task');
+
 // GET /project/:projectId (ou /tasks)
 exports.getTasksByProject = async (req, res) => {
   try {
     const projectId = req.params.projectId || req.query.project;
     if (!projectId) return res.status(400).json({ error: "ID de projet requis" });
 
-    const TaskModel = mongoose.model('task');
-
     // 1. Configuration de la pagination
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 6; // On respecte la limite de 6
+    const limit = parseInt(req.query.limit) || 6; 
     const skip = (page - 1) * limit;
 
     // 2. Construction du filtre (conditionnel)
     const condition = { project: projectId };
 
-    // Si le paramètre existe dans la requête (req.query), on l'ajoute à la condition
     if (req.query.status) condition.status = req.query.status;
     if (req.query.priority) condition.priority = req.query.priority;
     if (req.query.assignedTo) condition.assignedTo = req.query.assignedTo;
@@ -53,19 +54,12 @@ exports.getTasksByProject = async (req, res) => {
   }
 };
 
-// créer une tâche
-const mongoose = require('mongoose');
-const Project = require('../models/Project'); // Adjust path to your Project model
-const TaskModel = mongoose.model('task');     // Using your exact case-sensitive lowercase name
-
 // 1. POST / (Create a task)
-// Inside controllers/taskController.js -> createTask method
 exports.createTask = async (req, res) => {
   try {
     const { title, description, priority, status, dueDate, project: projectId, assignedTo } = req.body;
     const userId = req.user.id;
 
-    const Project = require('../models/Project');
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ error: "Projet non trouvé" });
 
@@ -74,7 +68,6 @@ exports.createTask = async (req, res) => {
       return res.status(403).json({ error: "Seul le créateur du projet peut ajouter des tâches." });
     }
 
-    const TaskModel = mongoose.model('task');
     const task = new TaskModel({
       title,
       description,
@@ -93,10 +86,11 @@ exports.createTask = async (req, res) => {
 
       if (!currentMembers.includes(memberIdStr)) {
         project.members.push(assignedTo);
-        await project.save(); // Saved automatically to project schema array!
+        await project.save(); 
       }
     }
-    //enregistrement d activité
+
+    // ENREGISTREMENT DE L'ACTIVITÉ (Saves who did it!)
     await logActivity('task_created', projectId, userId, `A créé la tâche "${title}"`);
 
     res.status(201).json(task);
@@ -134,20 +128,22 @@ exports.updateTask = async (req, res) => {
       }
     }
 
+    // ENREGISTREMENT DE L'ACTIVITÉ
+    await logActivity('task_updated', project._id, userId, `A modifié la tâche "${updatedTask.title}"`);
+
     res.json(updatedTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// Status Update Only
+// PATCH /:id/status (Status Update Only)
 exports.updateTaskStatus = async (req, res) => {
   try {
     const taskId = req.params.id;
     const userId = req.user.id;
     const { status } = req.body;
 
-    // Strict validation of the status enum from your task schema
     if (!['à faire', 'en cours', 'terminé'].includes(status)) {
       return res.status(400).json({ error: "Statut invalide" });
     }
@@ -158,7 +154,6 @@ exports.updateTaskStatus = async (req, res) => {
     const project = await Project.findById(task.project);
     if (!project) return res.status(404).json({ error: "Projet parent non trouvé" });
 
-    // Authorization rule check: Are they the project owner OR explicitly the assigned teammate?
     const isOwner = project.owner.toString() === userId;
     const isAssigned = task.assignedTo && task.assignedTo.toString() === userId;
 
@@ -166,7 +161,6 @@ exports.updateTaskStatus = async (req, res) => {
       return res.status(403).json({ error: "Accès refusé. Vous n'êtes pas autorisé à modifier cette tâche." });
     }
 
-    // Both are allowed to perform this change
     task.status = status;
     await task.save();
 
@@ -179,13 +173,15 @@ exports.updateTaskStatus = async (req, res) => {
   }
 };
 
-// supprimer une tache
+// DELETE /:id
 exports.deleteTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const userId = req.user.id;
+    const task = await TaskModel.findByIdAndDelete(req.params.id);
     if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
 
-    await logActivity('task_deleted', task.project, req.user.id, `A supprimé la tâche "${task.title}"`);
+    // ENREGISTREMENT DE L'ACTIVITÉ
+    await logActivity('task_deleted', task.project, userId, `A supprimé la tâche "${task.title}"`);
 
     res.json({ message: 'Tâche supprimée' });
   } catch (err) {
@@ -193,20 +189,24 @@ exports.deleteTask = async (req, res) => {
   }
 };
 
-// PATCH assigner une tache a un membre 
+// PATCH /:id/assign
 exports.assignTask = async (req, res) => {
   try {
     const { assignedTo } = req.body;
-    
-    // verify if assigned to user exists
+    const userId = req.user.id;
 
-    const task = await Task.findByIdAndUpdate(
+    const task = await TaskModel.findByIdAndUpdate(
       req.params.id,
       { assignedTo },
       { new: true }
-    ).populate('assignedTo', 'name email');
+    ).populate('assignedTo', 'name email nom');
     
     if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
+
+    // ENREGISTREMENT DE L'ACTIVITÉ
+    const targetName = task.assignedTo ? (task.assignedTo.name || task.assignedTo.nom || "un membre") : "Personne";
+    await logActivity('task_assigned', task.project, userId, `A assigné la tâche "${task.title}" à ${targetName}`);
+
     res.json(task);
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -158,26 +158,39 @@ async function loadProjectActivities(projectId, projectTitle = '') {
       return;
     }
 
-    activities.forEach(activity => {
-      const item = document.createElement('div');
-      item.className = 'activity-item';
+activities.forEach(activity => {
+  const item = document.createElement('div');
+  item.className = 'activity-item';
 
-      let authorName = sessionName;
-      if (activity.user && typeof activity.user === 'object') {
-        authorName = activity.user.nom || activity.user.name || sessionName;
-      }
+  let authorName = "Système / Inconnu";
 
-      const timeText = formatTimeAgo(activity.createdAt || new Date());
-      let actionText = activity.description || activity.action || "a interagi avec le projet";
+  if (activity.user) {
+    if (typeof activity.user === 'object') {
+      // 🔍 Tries every possible database field name configuration
+      authorName = activity.user.name || 
+                   activity.user.nom || 
+                   activity.user.username || 
+                   activity.user.login || 
+                   activity.user.email || 
+                   "Utilisateur sans nom";
+    } else if (typeof activity.user === 'string') {
+      authorName = activity.user === MON_ID ? sessionName : `Membre (${activity.user.substring(0, 6)})`;
+    }
+  } else {
+    authorName = "Système / Action Globale";
+  }
 
-      item.innerHTML = `
-        <div class="activity-text">
-          <strong>${authorName}</strong> ${actionText}
-        </div>
-        <div class="activity-time">— ${timeText}</div>
-      `;
-      timeline.appendChild(item);
-    });
+  const timeText = formatTimeAgo(activity.createdAt || new Date());
+  let actionText = activity.description || activity.action || "a interagi avec le projet";
+
+  item.innerHTML = `
+    <div class="activity-text">
+      <strong>${authorName}</strong> ${actionText}
+    </div>
+    <div class="activity-time">— ${timeText}</div>
+  `;
+  timeline.appendChild(item);
+});
 
   } catch (parseError) {
     console.error("Erreur de rendu :", parseError);

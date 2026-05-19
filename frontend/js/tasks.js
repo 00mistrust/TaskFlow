@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         loadMembers().then(() => {
             if(projetActuelData && projetActuelData.title) {
-                titreProjetActuel.innerHTML = `Tâches : <strong>${projetActuelData.title}</strong>`;
+                titreProjetActuel.innerHTML = `Tâches :  <strong style="color: #ffc402e0; ">${projetActuelData.title}</strong>`;
             }
             loadTasks(1);
         });
