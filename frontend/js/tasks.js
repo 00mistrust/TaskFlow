@@ -46,14 +46,15 @@ if (btnRetourProjets) {
 
 // INITIALISATION AU CHARGEMENT DE LA PAGE
 document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('id') || params.get('projectId');
     if (projetActuelId) {
         vueProjets.classList.add('d-none');
         vueTaches.classList.remove('d-none');
         
         loadMembers().then(() => {
             if(projetActuelData && projetActuelData.title) {
-                // Preserves your gorgeous yellow title style constraint safely
-                titreProjetActuel.innerHTML = `Tâches : <strong style="color: #ffc402e0;">${projetActuelData.title}</strong>`;
+                titreProjetActuel.innerHTML = `Tâches :  <strong style="color: #ffc402e0; ">${projetActuelData.title}</strong>`;
             }
             loadTasks(1);
         });
@@ -89,7 +90,7 @@ async function chargerProjetsPourTaches() {
             const droiteContainer = document.getElementById('mesTachesAssigneesList'); 
 
             gaucheContainer.innerHTML = '';
-             droiteContainer.innerHTML = '';
+            droiteContainer.innerHTML = '';
 
             const ownedProjects = [];
             const sharedProjects = [];
@@ -123,7 +124,7 @@ async function chargerProjetsPourTaches() {
                     gaucheContainer.insertAdjacentHTML('beforeend', générerHTMLDossier(project, currentUserId));
                 });
             }
-            généerPaginationPanel('paginationProjetsGauche', pageProjetsGauche, totalPagesGauche, 'changerPageGauche');
+            générerPaginationPanel('paginationProjetsGauche', pageProjetsGauche, totalPagesGauche, 'changerPageGauche');
 
             // --- PAGINATION FOR RIGHT PANEL (SHARED) ---
             const totalPagesDroite = Math.ceil(sharedProjects.length / LIMIT_PROJETS) || 1;
@@ -143,7 +144,7 @@ async function chargerProjetsPourTaches() {
                     droiteContainer.insertAdjacentHTML('beforeend', générerHTMLDossier(project, currentUserId));
                 });
             }
-            généerPaginationPanel('paginationProjetsDroite', pageProjetsDroite, totalPagesDroite, 'changerPageDroite');
+            générerPaginationPanel('paginationProjetsDroite', pageProjetsDroite, totalPagesDroite, 'changerPageDroite');
         }
     } catch (error) {
         console.error("Erreur lors du chargement des projets sur la page des tâches :", error);
@@ -169,6 +170,8 @@ function générerHTMLDossier(project, currentUserId) {
     `;
 }
 
+// Render utility for panels pagination
+// Render utility for panels pagination
 function générerPaginationPanel(containerId, currentPage, totalPages, handlerName) {
     const div = document.getElementById(containerId);
     if (!div) return;
@@ -198,9 +201,10 @@ window.changerPageDroite = function(newPage) {
 }
 
 function ouvrirVueTaches(projectId, projectTitle) {
+    // Add this inside your project-loading function in js/tasks.js
     history.pushState(null, '', `tasks.html?id=${projectId}`);
     projetActuelId = projectId; 
-    titreProjetActuel.innerHTML = `<small>Projet</small> : <strong style="color: #ffc402e0;">${projectTitle}</strong>`;
+    titreProjetActuel.innerHTML = `<small>Projet</small> : <strong style="color: #ffc402e0; ">${projectTitle}</strong>`;
     
     vueProjets.classList.add('d-none');
     vueTaches.classList.remove('d-none');
@@ -277,9 +281,12 @@ function renderTasks(tasks) {
     projectOwnerId = String(projectOwnerId).trim();
 
     const isProjectOwner = (currentUserId && projectOwnerId && currentUserId === projectOwnerId);
+    
+    let tasksToDisplay = tasks;
+
     let taskListHTML = '';
 
-    tasks.forEach(task => {
+    tasksToDisplay.forEach(task => {
         const priorityClass = { 'haute': 'badge-priority-haute', 'moyenne': 'badge-priority-moyenne', 'basse': 'badge-priority-basse' }[task.priority] || 'bg-secondary';
         const statusClass = { 'à faire': 'badge-status-afaire', 'en cours': 'badge-status-encours', 'terminé': 'badge-status-termine' }[task.status] || 'bg-secondary';
         const descriptionText = task.description ? `<p class="card-text small text-muted mb-3">${task.description}</p>` : '';
@@ -413,7 +420,7 @@ function renderPagination(page, totalPages) {
         </button>
         <span class="text-muted small mx-3">Page ${safePage} / ${safeTotalPages}</span>
         <button class="btn btn-sm btn-outline-secondary pagination-btn" onclick="loadTasks(${safePage + 1})" ${safePage >= safeTotalPages ? 'disabled' : ''}>
-            <i class="bi bi-chevron-right"></i>
+            Suivant <i class="bi bi-chevron-right"></i>
         </button>`;
 }
 
@@ -596,10 +603,11 @@ async function loadMembers() {
     }
 }
 
-// MANAGEMENT DU MODAL ADDTASK
+// MANAGEMENT DU MODAL ADDTASK AVEC RESET INTEGRAL ET DETECTEUR DE BROUILLON VISUEL
 const modalEl = document.getElementById('addTaskModal');
 if (modalEl) {
     modalEl.addEventListener('show.bs.modal', () => {
+        // Formulaire vierge à chaque ouverture
         document.getElementById('taskTitle').value = '';
         document.getElementById('taskDescription').value = '';
         document.getElementById('taskPriority').value = '';
@@ -617,7 +625,7 @@ if (modalEl) {
             const brouillon = JSON.parse(dataSauvegardee);
             if (brouillon.title || brouillon.description) {
                 brouillonEnAttente = brouillon; 
-                if (alertDiv) alertDiv.classList.remove('d-none');
+                if (alertDiv) alertDiv.classList.remove('d-none'); // Déclenchement du bandeau vert
             }
         }
     });
@@ -638,13 +646,13 @@ window.restaurerLeBrouillonVisuellement = function() {
     
     brouillonEnAttente = null; 
 };
-
 window.masquerBandeauBrouillon = function() {
     const alertDiv = document.getElementById('draftAlert');
     if (alertDiv) alertDiv.classList.add('d-none');
+    
+    // On vide la mémoire tampon pour cette ouverture,
     brouillonEnAttente = null; 
 };
-
 async function pollNotifications() {
     try {
         const res = await axios.get('http://localhost:5000/api/notifications', {
@@ -684,6 +692,7 @@ async function assignTask(taskId) {
     }
 }
 
+// LOGIQUE DES BROUILLONS SANS BLOCAGE NATIF CONFIRM()
 window.sauvegarderBrouillon = function() {
     if (!projetActuelId) return;
 
@@ -708,12 +717,8 @@ window.supprimerBrouillon = function() {
     brouillonEnAttente = null;
 };
 
-// DÉMARRAGE DE LA PAGE (Optimized Startup Flow)
+// DÉMARRAGE DE LA PAGE
 pollNotifications();
 setInterval(pollNotifications, 30000);
 window.assignTask = assignTask;
-
-// Guard check preventing backend & layout collision spikes
-if (!projetActuelId) {
-    chargerProjetsPourTaches();  
-}
+chargerProjetsPourTaches();
