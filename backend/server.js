@@ -10,7 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 // Connexion à la Base de Données
-mongoose.connect(process.env.MONGO_URI)
+// REMPLACE process.env.MONGO_URI PAR TON LIEN EN DUR :
+mongoose.connect("mongodb+srv://4dm1n:<iknowuwannacrackthis>@taskflow.2dioaf4.mongodb.net/?appName=taskflow")
   .then(() => console.log('MongoDB connecté'))
   .catch(err => console.error('Erreur de connexion MongoDB:', err));
 
@@ -36,7 +37,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erreur interne du serveur' });
 });
 // Lancement du serveur
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 10000; // Render utilise souvent 10000 par défaut
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Serveur lancé sur le port ${PORT}`);
 });
