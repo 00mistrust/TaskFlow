@@ -15,9 +15,10 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('Erreur de connexion MongoDB:', err));
 
 // Importation des fichiers de routes
+// Importation des fichiers de routes (CORRIGÉ AVEC LES 'S')
 const authRoutes = require('./src/routes/auth');
-const projectRoutes = require('./src/routes/projects');
-const taskRoutes = require('./src/routes/tasks');
+const projectRoutes = require('./src/routes/projects'); 
+const taskRoutes = require('./src/routes/tasks');     
 const dashboardRoutes = require('./src/routes/dashboard');
 app.use('/api/notifications', require('./src/routes/notifications'));
 
