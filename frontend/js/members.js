@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000/api/projects';
+const BASE_URL = 'https://taskflow-backend.onrender.com/api/projects';
 const token = localStorage.getItem('token');
 
 // Get project id from url

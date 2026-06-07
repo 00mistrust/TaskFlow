@@ -1,5 +1,5 @@
 // js/tasks.js
-const BASE_URL = 'http://localhost:5000/api/tasks';
+const BASE_URL = 'https://taskflow-backend.onrender.com/api/tasks';
 const token = localStorage.getItem('token');
 let currentPage = 1;
 let pageProjetsGauche = 1;
@@ -77,7 +77,7 @@ async function chargerProjetsPourTaches() {
     }
 
     try {
-        const response = await fetch('http://localhost:5000/api/projects', {
+        const response = await fetch('https://taskflow-backend.onrender.com/api/projects', {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -549,7 +549,7 @@ let membersCache = [];
 async function loadMembers() {
     if (!projetActuelId) return;
     try {
-        const res = await axios.get(`http://localhost:5000/api/projects/${projetActuelId}`, {
+        const res = await axios.get(`https://taskflow-backend.onrender.com/api/projects/${projetActuelId}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -655,7 +655,7 @@ window.masquerBandeauBrouillon = function() {
 };
 async function pollNotifications() {
     try {
-        const res = await axios.get('http://localhost:5000/api/notifications', {
+        const res = await axios.get('https://taskflow-backend.onrender.com/api/notifications', {
             headers: { Authorization: `Bearer ${token}` }
         });
         const unread = res.data.filter(n => !n.read).length;

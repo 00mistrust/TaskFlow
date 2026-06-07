@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- 1. CHARGEMENT DES PROJETS ---
   try {
-    const resProjects = await axios.get('http://localhost:5000/api/projects', {
+    const resProjects = await axios.get('https://taskflow-backend.onrender.com/api/projects', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const taskPromises = projects.map(async (p) => {
       const pId = p._id || p.id;
       try {
-        const resTasks = await axios.get(`http://localhost:5000/api/tasks?project=${pId}`, {
+        const resTasks = await axios.get(`https://taskflow-backend.onrender.com/api/tasks?project=${pId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

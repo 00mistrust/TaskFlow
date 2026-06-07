@@ -2,7 +2,7 @@ const notifToken = localStorage.getItem('token');
 
 async function fetchNotifications() {
   try {
-    const response = await axios.get('http://localhost:5000/api/notifications', {
+    const response = await axios.get('https://taskflow-backend.onrender.com/api/notifications', {
       headers: { Authorization: `Bearer ${notifToken}` }
     });
 
@@ -50,7 +50,7 @@ async function fetchNotifications() {
 
 async function marquerLue(id) {
   try {
-    await axios.patch(`http://localhost:5000/api/notifications/${id}/read`, {}, {
+    await axios.patch(`https://taskflow-backend.onrender.com/api/notifications/${id}/read`, {}, {
       headers: { Authorization: `Bearer ${notifToken}` }
     });
     fetchNotifications();

@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function chargerLesProjets() {
     try {
         // Envoi des query params de pagination à ton API REST comme demandé par le sujet
-        const response = await fetch(`http://localhost:5000/api/projects?limit=100`, {
+        const response = await fetch(`https://taskflow-backend.onrender.com/api/projects?limit=100`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -147,7 +147,7 @@ form.addEventListener('submit', async (e) => {
     if (title.trim() === "") return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/projects',  {
+        const response = await fetch('https://taskflow-backend.onrender.com/api/projects',  {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -273,7 +273,7 @@ window.supprimerProjet = async function(id, btnElement) {
     if (!confirm("Voulez-vous vraiment supprimer ce projet ?")) return;
 
     try {
-        const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
+        const response = await fetch(`https://taskflow-backend.onrender.com/api/projects/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -327,7 +327,7 @@ if (editForm) {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
+            const response = await fetch(`https://taskflow-backend.onrender.com/api/projects/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

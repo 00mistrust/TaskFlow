@@ -6,7 +6,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   const password = document.getElementById('password').value;
 
   try {
-    await axios.post('http://localhost:5000/api/auth/register', {
+    await axios.post('https://taskflow-backend.onrender.com/api/auth/register', {
       nom: nom,
       email: email,
       motDePasse: password
