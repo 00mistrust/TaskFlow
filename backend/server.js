@@ -29,7 +29,11 @@ app.use('/api/dashboard', dashboardRoutes);
 
 // Route de test d'accueil
 app.get('/', (req, res) => res.json({ message: 'Nice Job Team, proud of you ALL, now time to show up !' }));
-
+// Middleware de gestion d'erreurs global (à mettre juste avant app.listen)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Erreur interne du serveur' });
+});
 // Lancement du serveur
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

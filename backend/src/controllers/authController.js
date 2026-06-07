@@ -4,12 +4,22 @@ const bcrypt = require('bcryptjs');
 
 exports.register = async (req, res) => {
   try {
-    const { nom, email, motDePasse } = req.body;
-    const hashed = await bcrypt.hash(motDePasse, 10);
-    const user = await User.create({ nom, email, motDePasse: hashed });
-    res.status(201).json({ message: 'Compte créé avec succès' });
+    // On récupère motDePasse OU password si le frontend a envoyé password
+    const { nom, email, motDePasse, password } = req.body;
+    const finalPassword = motDePasse || password;
+
+    if (!finalPassword) {
+      return res.status(400).json({ error: "Le mot de passe est requis." });
+    }
+
+    const hashed = await bcrypt.hash(finalPassword, 10);
+    
+    // Le modèle Mongoose attend toujours 'motDePasse'
+    const user = await User.create({ nom, email, motDePasse: hashed }); 
+    
+    return res.status(201).json({ message: 'Compte créé avec succès' });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
 
