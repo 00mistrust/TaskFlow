@@ -9,7 +9,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     await axios.post('https://taskflow-backend.onrender.com/api/auth/register', {
       nom: nom,
       email: email,
-      motDePasse: password
+      password: password
     });
 
     alert('Compte créé avec succès !');
